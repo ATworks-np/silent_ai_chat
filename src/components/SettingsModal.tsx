@@ -2,11 +2,15 @@
 
 import { Box, Slider, Stack, Typography } from "@mui/material";
 import { BaseModal } from "./BaseModal";
-import { useChatSettings } from "../hooks/useChatSettings";
+import type { AnswerQuality, AnswerTone } from "../hooks/useChatSettings";
 
 export interface SettingsModalProps {
   open: boolean;
   onClose: () => void;
+  quality: AnswerQuality;
+  tone: AnswerTone;
+  setQuality: (quality: AnswerQuality) => void;
+  setTone: (tone: AnswerTone) => void;
 }
 
 const QUALITY_ORDER = ["simple", "normal", "detailed"] as const;
@@ -25,9 +29,7 @@ const TONE_MARKS = [
   { value: 2, label: "きっちり" },
 ];
 
-export function SettingsModal({ open, onClose }: SettingsModalProps) {
-  const { quality, tone, setQuality, setTone } = useChatSettings();
-
+export function SettingsModal({ open, onClose, quality, tone, setQuality, setTone }: SettingsModalProps) {
   const sliderValue = QUALITY_ORDER.indexOf(quality);
   const toneSliderValue = TONE_ORDER.indexOf(tone);
 

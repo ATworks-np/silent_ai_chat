@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useSystemPrompt } from "./useSystemPrompt";
-import { useChatSettings } from "./useChatSettings";
+import type { AnswerQuality, AnswerTone } from "./useChatSettings";
 
 export interface GeminiMessage {
   id: string;
@@ -12,12 +12,16 @@ export interface GeminiMessage {
   parentId?: string;
 }
 
-export function useGemini() {
+export interface UseGeminiOptions {
+  quality: AnswerQuality;
+  tone: AnswerTone;
+}
+
+export function useGemini({ quality, tone }: UseGeminiOptions) {
   const [messages, setMessages] = useState<GeminiMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { content: systemPrompt } = useSystemPrompt();
-  const { quality, tone } = useChatSettings();
 
   const fallbackSystemPrompt =
     "質問に対して必要最小限の情報のみを簡潔に回答してください。前置き、導入文、補足説明、背景情報は一切不要です。質問された内容に直接答える核心部分のみを端的に記述してください。冗長な表現や装飾的な言葉は避け、事実を箇条書きまたは短い文で述べてください。";

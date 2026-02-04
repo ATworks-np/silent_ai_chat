@@ -6,6 +6,7 @@ import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import { useChatInput } from "../hooks/useChatInput";
 import { useGemini } from "../hooks/useGemini";
+import { useChatSettings } from "../hooks/useChatSettings";
 import ChatInputForm from "./ChatInputForm";
 import MessageList from "./MessageList";
 import DetailPopover from "./DetailPopover";
@@ -19,7 +20,8 @@ interface HighlightedSelection {
 
 export default function ChatBox() {
   const { value, onChange, reset } = useChatInput();
-  const { messages, loading, error, sendMessage } = useGemini();
+  const { quality, tone, setQuality, setTone } = useChatSettings();
+  const { messages, loading, error, sendMessage } = useGemini({ quality, tone });
   const [anchorPosition, setAnchorPosition] = useState<{ top: number; left: number } | null>(null);
   const [selectedText, setSelectedText] = useState<string>("");
   const [selectedMessageId, setSelectedMessageId] = useState<string>("");
@@ -138,6 +140,10 @@ export default function ChatBox() {
         onChange={onChange}
         onSubmit={handleSubmit}
         disabled={loading}
+        quality={quality}
+        tone={tone}
+        setQuality={setQuality}
+        setTone={setTone}
       />
     </>
   );

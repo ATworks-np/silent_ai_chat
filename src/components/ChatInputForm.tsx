@@ -5,17 +5,31 @@ import TextField from "@mui/material/TextField";
 import IconButton from "@mui/material/IconButton";
 import SendIcon from "@mui/icons-material/Send";
 import TuneIcon from "@mui/icons-material/Tune";
-import { useSettingsDialog } from "../hooks/useSettingsDialog";
-import { SettingsModal } from "./SettingsModal";
+import { useSettingsDialog } from "@/hooks/useSettingsDialog";
+import { SettingsModal } from "@/components/SettingsModal";
+import type { AnswerQuality, AnswerTone } from "@/hooks/useChatSettings";
 
 interface ChatInputFormProps {
   value: string;
   onChange: (value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   disabled?: boolean;
+  quality: AnswerQuality;
+  tone: AnswerTone;
+  setQuality: (quality: AnswerQuality) => void;
+  setTone: (tone: AnswerTone) => void;
 }
 
-export default function ChatInputForm({ value, onChange, onSubmit, disabled = false }: ChatInputFormProps) {
+export default function ChatInputForm({
+  value,
+  onChange,
+  onSubmit,
+  disabled = false,
+  quality,
+  tone,
+  setQuality,
+  setTone,
+}: ChatInputFormProps) {
   const { state, openDialog, closeDialog } = useSettingsDialog();
 
   return (
@@ -68,7 +82,14 @@ export default function ChatInputForm({ value, onChange, onSubmit, disabled = fa
           </Grid>
         </Stack>
       </form>
-      <SettingsModal open={state.open} onClose={closeDialog} />
+      <SettingsModal
+        open={state.open}
+        onClose={closeDialog}
+        quality={quality}
+        tone={tone}
+        setQuality={setQuality}
+        setTone={setTone}
+      />
     </Box>
   );
 }
