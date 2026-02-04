@@ -10,6 +10,8 @@ import AccordionDetails from "@mui/material/AccordionDetails";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
+import rehypeHighlight from "rehype-highlight";
+import "highlight.js/styles/github.css";
 import RoundedButton from "./RoundedButton";
 import { useMemo } from "react";
 
@@ -141,23 +143,14 @@ export default function MessageItem({ messageId: _messageId, content, userMessag
             <AccordionDetails sx={{ px: 0, pt: 1, pb: 0 }}>
               <Stack spacing={1}>
                 {userMessages.map((msg) => (
-                  <Paper
+                  <Typography
                     key={msg.id}
-                    variant="outlined"
-                    sx={{
-                      p: 1,
-                      borderLeft: 3,
-                      borderLeftColor: "primary.main",
-                      backgroundColor: "background.paper",
-                    }}
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
                   >
-                    <Typography
-                      variant="body2"
-                      sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-                    >
-                      {msg.content}
-                    </Typography>
-                  </Paper>
+                    {msg.content}
+                  </Typography>
                 ))}
               </Stack>
             </AccordionDetails>
@@ -202,7 +195,7 @@ export default function MessageItem({ messageId: _messageId, content, userMessag
         onMouseUp={onTextSelect}
       >
         <ReactMarkdown
-          rehypePlugins={[rehypeRaw]}
+          rehypePlugins={[rehypeRaw, rehypeHighlight]}
           // markタグにホバーイベントを付与して対応する子メッセージのPaperをハイライト
           components={{
             mark: ({ node, children, ...props }) => {

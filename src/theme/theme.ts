@@ -33,12 +33,13 @@ const theme = createTheme({
   },
   typography: {
     fontFamily: [
-      "Inter",
+      "Noto Sans JP",
       "system-ui",
       "-apple-system",
+      "BlinkMacSystemFont",
       "Segoe UI",
       "Roboto",
-      "Helvetica",
+      "Helvetica Neue",
       "Arial",
       "sans-serif",
     ].join(","),

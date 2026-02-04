@@ -1,9 +1,12 @@
 "use client";
 
-import {Box, Grid } from "@mui/material";
+import { Box, Grid, Stack } from "@mui/material";
 import TextField from "@mui/material/TextField";
 import IconButton from "@mui/material/IconButton";
 import SendIcon from "@mui/icons-material/Send";
+import TuneIcon from "@mui/icons-material/Tune";
+import { useSettingsDialog } from "../hooks/useSettingsDialog";
+import { SettingsModal } from "./SettingsModal";
 
 interface ChatInputFormProps {
   value: string;
@@ -13,6 +16,8 @@ interface ChatInputFormProps {
 }
 
 export default function ChatInputForm({ value, onChange, onSubmit, disabled = false }: ChatInputFormProps) {
+  const { state, openDialog, closeDialog } = useSettingsDialog();
+
   return (
     <Box sx={{ 
       position: "fixed", 
@@ -24,38 +29,46 @@ export default function ChatInputForm({ value, onChange, onSubmit, disabled = fa
       zIndex: 1000,
     }}>
       <form onSubmit={onSubmit}>
-        <Grid container spacing={2} sx={{ maxWidth: "800px", mx: "auto" }}  alignItems="flex-end">
-          <Grid size={{ xs: 11 }}>
-            <TextField
-              fullWidth
-              multiline
-              minRows={1}
-              maxRows={10}
-              variant="outlined"
-              color="primary"
-              placeholder="メッセージを入力"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 5,
-                  backgroundColor: "background.paper",
-                },
-              }}
-            />
+        <Stack spacing={1} sx={{ maxWidth: "800px", mx: "auto" }}>
+          <Grid container spacing={2} alignItems="flex-end">
+            <Grid size={{ xs: 1 }}>
+              <IconButton color="default" aria-label="設定" size="large" onClick={openDialog}>
+                <TuneIcon />
+              </IconButton>
+            </Grid>
+            <Grid size={{ xs: 10 }}>
+              <TextField
+                fullWidth
+                multiline
+                minRows={1}
+                maxRows={10}
+                variant="outlined"
+                color="primary"
+                placeholder="メッセージを入力"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 5,
+                    backgroundColor: "background.paper",
+                  },
+                }}
+              />
+            </Grid>
+            <Grid size={{ xs: 1 }}>
+              <IconButton
+                type="submit"
+                color="primary"
+                size="large"
+                disabled={disabled}
+              >
+                <SendIcon />
+              </IconButton>
+            </Grid>
           </Grid>
-          <Grid size={{ xs: 1 }}>
-            <IconButton
-              type="submit"
-              color="primary"
-              size="large"
-              disabled={disabled}
-            >
-              <SendIcon />
-            </IconButton>
-          </Grid>
-        </Grid>
+        </Stack>
       </form>
+      <SettingsModal open={state.open} onClose={closeDialog} />
     </Box>
   );
 }

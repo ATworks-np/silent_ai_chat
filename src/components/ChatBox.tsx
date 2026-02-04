@@ -104,7 +104,7 @@ export default function ChatBox() {
   return (
     <>
       <Stack alignItems="center" spacing={2} sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", px: 2, pb: "120px" }}>
-        <Typography variant="h3" component="h1" color="text.primary">
+        <Typography variant="h3" component="h1" color="text.primary" fontWeight="bold">
           しゃべらないAIチャット
         </Typography>
 
