@@ -27,7 +27,7 @@ export function ChatSettingsProvider({ children }: ChatSettingsProviderProps) {
   const [quality, setQuality] = useState<AnswerQuality>("normal");
   const [tone, setTone] = useState<AnswerTone>("normal");
 
-     const value = useMemo<ChatSettingsContextValue>(
+  const value = useMemo<ChatSettingsContextValue>(
     () => ({ quality, tone, setQuality, setTone }),
     [quality, tone],
   );
@@ -39,7 +39,12 @@ export function useChatSettings(): ChatSettingsContextValue {
   const context = useContext(ChatSettingsContext);
 
   if (!context) {
-    throw new Error("useChatSettings must be used within a ChatSettingsProvider");
+    return {
+      quality: "normal",
+      tone: "normal",
+      setQuality: () => {},
+      setTone: () => {},
+    };
   }
 
   return context;
