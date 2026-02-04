@@ -13,7 +13,7 @@ import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github.css";
 import RoundedButton from "./RoundedButton";
-import { useMemo } from "react";
+import {useMemo} from "react";
 
 interface UserMessage {
   id: string;
@@ -69,7 +69,7 @@ export default function MessageItem({ messageId: _messageId, content, userMessag
     const fencedCodePattern = /(```[\s\S]*?```)/g;
     const fencedSegments = content.split(fencedCodePattern);
 
-    const processedFenced = fencedSegments
+    return fencedSegments
       .map((segment) => {
         if (segment.startsWith("```") && segment.endsWith("```")) {
           // コードブロックそのものはそのまま返す
@@ -92,8 +92,6 @@ export default function MessageItem({ messageId: _messageId, content, userMessag
           .join("");
       })
       .join("");
-
-    return processedFenced;
   }, [content, highlights]);
 
   return (
@@ -108,9 +106,6 @@ export default function MessageItem({ messageId: _messageId, content, userMessag
       }}
    >
       <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-        <Typography variant="caption" sx={{ fontWeight: "bold" }}>
-          AI
-        </Typography>
         {userMessages.length > 0 && (
           <Accordion
             disableGutters
