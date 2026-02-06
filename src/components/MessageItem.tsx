@@ -102,182 +102,185 @@ export default function MessageItem({
   }, [content, highlights]);
 
   return (
-    <Paper
-      sx={{
-        p: 2,
-        color: "text.primary",
-        borderLeft: depth > 0 ? `4px solid` : undefined,
-        borderLeftColor: depth > 0 ? "secondary.main" : undefined,
-        transition: "background-color 0.2s ease",
-        backgroundColor: isHighlighted ? "secondary.light" : "background.paper",
-      }}
-   >
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-        {userMessages.length > 0 && (
-          <Accordion
-            disableGutters
-            elevation={0}
-            sx={{
-              backgroundColor: "transparent",
-              "&::before": { display: "none" },
-              flex: 1,
-            }}
-          >
-            <AccordionSummary
-              expandIcon={<ExpandMoreIcon sx={{ fontSize: 16 }} />}
+    <Box sx={{ pl: depth * 2 }}>
+      <Paper
+        sx={{
+          p: 2,
+          color: "text.primary",
+          borderLeftColor: depth > 0 ? "secondary.main" : undefined,
+          transition: "background-color 0.2s ease",
+          backgroundColor: isHighlighted ? "secondary.light" : "background.paper",
+
+        }}
+      >
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
+          {userMessages.length > 0 && (
+            <Accordion
+              disableGutters
+              elevation={0}
               sx={{
-                minHeight: 0,
-                justifyContent: "flex-start",
-                "& .MuiAccordionSummary-content": {
-                  margin: 0,
-                  flexGrow: 0,
-                },
-                "& .MuiAccordionSummary-expandIconWrapper": {
-                  marginLeft: "4px", // 任意の余白
-                },
-                padding: 0,
+                backgroundColor: "transparent",
+                "&::before": { display: "none" },
+                flex: 1,
               }}
             >
-              <Typography variant="caption" color="text.secondary">
-                送信したメッセージを見る
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails sx={{ px: 0, pt: 1, pb: 0 }}>
-              <Stack spacing={1}>
-                {userMessages.map((msg) => (
-                  <Typography
-                    key={msg.id}
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-                  >
-                    {msg.content}
-                  </Typography>
-                ))}
-              </Stack>
-            </AccordionDetails>
-          </Accordion>
-        )}
-      </Stack>
-      <Box 
-        sx={{ 
-          userSelect: "text",
-          cursor: "text",
-          "& p": { margin: "0.5em 0" },
-          "& h1, & h2, & h3, & h4, & h5, & h6": { 
-            marginTop: "1em", 
-            marginBottom: "0.5em",
-            fontWeight: "bold"
-          },
-          "& ul, & ol": { paddingLeft: "2em", margin: "0.5em 0" },
-          "& code": { 
-            backgroundColor: "rgba(0, 0, 0, 0.05)",
-            padding: "0.2em 0.4em",
-            borderRadius: "3px",
-            fontFamily: "monospace"
-          },
-          "& pre": { 
-            backgroundColor: "rgba(0, 0, 0, 0.05)",
-            padding: "1em",
-            borderRadius: "4px",
-            overflow: "auto"
-          },
-          "& pre code": {
-            backgroundColor: "transparent",
-            padding: 0
-          },
-          "& mark": {
-            backgroundColor: "secondary.main",
-            color: "secondary.contrastText",
-            borderRadius: "2px",
-            padding: "0.1em 0.2em",
-            cursor: "pointer",
-          }
-        }}
-        onMouseUp={onTextSelect}
-      >
-        <ReactMarkdown
-          rehypePlugins={[rehypeRaw, rehypeHighlight]}
-          // markタグにホバーイベントを付与して対応する子メッセージのPaperをハイライト
-          components={{
-            mark: ({ node, children, ...props }) => {
-              // data-child-id は props 側に乗ってくる場合があるので、まず props を優先して読む
-              const dataChildIdFromProps =
-                (props as { [key: string]: unknown })["data-child-id"];
-
-              const dataChildIdFromNode =
-                node && "properties" in (node as never)
-                  ? (node as { properties?: { [key: string]: unknown } }).properties?.["data-child-id"]
-                  : "";
-
-              const dataChildId =
-                (typeof dataChildIdFromProps === "string" && dataChildIdFromProps) ||
-                (typeof dataChildIdFromNode === "string" && dataChildIdFromNode) ||
-                "";
-
-              const handleMouseEnter = () => {
-                if (dataChildId) {
-                  console.log("Hovered highlight for child message:", dataChildId);
-                  if (onHoverChild) {
-                    onHoverChild(dataChildId);
-                  }
-                }
-              };
-
-              const handleMouseLeave = () => {
-                if (onHoverChild) {
-                  onHoverChild("");
-                }
-              };
-
-              return (
-                <mark
-                  {...props}
-                  data-child-id={dataChildId}
-                  onMouseEnter={handleMouseEnter}
-                  onMouseLeave={handleMouseLeave}
-                >
-                  {children}
-                </mark>
-              );
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon sx={{ fontSize: 16 }} />}
+                sx={{
+                  minHeight: 0,
+                  justifyContent: "flex-start",
+                  "& .MuiAccordionSummary-content": {
+                    margin: 0,
+                    flexGrow: 0,
+                  },
+                  "& .MuiAccordionSummary-expandIconWrapper": {
+                    marginLeft: "4px", // 任意の余白
+                  },
+                  padding: 0,
+                }}
+              >
+                <Typography variant="caption" color="text.secondary">
+                  送信したメッセージを見る
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ px: 0, pt: 1, pb: 0 }}>
+                <Stack spacing={1}>
+                  {userMessages.map((msg) => (
+                    <Typography
+                      key={msg.id}
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                    >
+                      {msg.content}
+                    </Typography>
+                  ))}
+                </Stack>
+              </AccordionDetails>
+            </Accordion>
+          )}
+        </Stack>
+        <Box
+          sx={{
+            userSelect: "text",
+            cursor: "text",
+            "& p": { margin: "0.5em 0" },
+            "& h1, & h2, & h3, & h4, & h5, & h6": {
+              marginTop: "1em",
+              marginBottom: "0.5em",
+              fontWeight: "bold"
             },
+            "& ul, & ol": { paddingLeft: "2em", margin: "0.5em 0" },
+            "& code": {
+              backgroundColor: "rgba(0, 0, 0, 0.05)",
+              padding: "0.2em 0.4em",
+              borderRadius: "3px",
+              fontFamily: "monospace"
+            },
+            "& pre": {
+              backgroundColor: "rgba(0, 0, 0, 0.05)",
+              padding: "1em",
+              borderRadius: "4px",
+              overflow: "auto"
+            },
+            "& pre code": {
+              backgroundColor: "transparent",
+              padding: 0
+            },
+            "& mark": {
+              backgroundColor: "secondary.main",
+              color: "secondary.contrastText",
+              borderRadius: "2px",
+              padding: "0.1em 0.2em",
+              cursor: "pointer",
+            }
           }}
+          onMouseUp={onTextSelect}
         >
-          {highlightedContent}
-        </ReactMarkdown>
-      </Box>
-      <Grid container spacing={1} alignItems="center">
-        {suggestedActions && suggestedActions.slice(0, 2).map((action: string) => (
-          <Grid key={action} size={{ xs: 12, lg: 5}}>
+          <ReactMarkdown
+            rehypePlugins={[rehypeRaw, rehypeHighlight]}
+            // markタグにホバーイベントを付与して対応する子メッセージのPaperをハイライト
+            components={{
+              mark: ({ node, children, ...props }) => {
+                // data-child-id は props 側に乗ってくる場合があるので、まず props を優先して読む
+                const dataChildIdFromProps =
+                  (props as { [key: string]: unknown })["data-child-id"];
+
+                const dataChildIdFromNode =
+                  node && "properties" in (node as never)
+                    ? (node as { properties?: { [key: string]: unknown } }).properties?.["data-child-id"]
+                    : "";
+
+                const dataChildId =
+                  (typeof dataChildIdFromProps === "string" && dataChildIdFromProps) ||
+                  (typeof dataChildIdFromNode === "string" && dataChildIdFromNode) ||
+                  "";
+
+                const handleMouseEnter = () => {
+                  if (dataChildId) {
+                    console.log("Hovered highlight for child message:", dataChildId);
+                    if (onHoverChild) {
+                      onHoverChild(dataChildId);
+                    }
+                  }
+                };
+
+                const handleMouseLeave = () => {
+                  if (onHoverChild) {
+                    onHoverChild("");
+                  }
+                };
+
+                return (
+                  <mark
+                    {...props}
+                    data-child-id={dataChildId}
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    {children}
+                  </mark>
+                );
+              },
+            }}
+          >
+            {highlightedContent}
+          </ReactMarkdown>
+        </Box>
+        <Grid container spacing={1} alignItems="center">
+          {suggestedActions && suggestedActions.slice(0, 2).map((action: string) => (
+            <Grid key={action} size={{ xs: 12, lg: 5}}>
+              <RoundedButton
+                variant="outlined"
+                color="secondary"
+                onClick={() => {
+                  if (disabled || !onActionClick) return;
+                  onActionClick(action);
+                }}
+                disabled={disabled}
+              >
+                {action}
+              </RoundedButton>
+            </Grid>
+          ))}
+          <Grid size={{ xs: 12, lg: 2 }}>
             <RoundedButton
               variant="outlined"
               color="secondary"
-              onClick={() => {
-                if (disabled || !onActionClick) return;
-                onActionClick(action);
-              }}
+              onClick={onNotResolved}
               disabled={disabled}
             >
-              {action}
+              未解決
             </RoundedButton>
           </Grid>
-        ))}
-        <Grid size={{ xs: 12, lg: 2 }}>
-          <RoundedButton
-            variant="outlined"
-            color="secondary"
-            onClick={onNotResolved}
-            disabled={disabled}
-          >
-            未解決
-          </RoundedButton>
         </Grid>
-      </Grid>
-      {children && (
-        <Box sx={{ mt: 2 }}>
-          {children}
-        </Box>
-      )}
-    </Paper>
+        {children && (
+          <Box sx={{ mt: 2 }}>
+            {children}
+          </Box>
+        )}
+      </Paper>
+    </Box>
+
   );
 }

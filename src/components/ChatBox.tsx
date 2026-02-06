@@ -27,7 +27,15 @@ export default function ChatBox() {
     const selection = window.getSelection();
     const text = selection?.toString().trim();
 
-    if (text && text.length > 0 && selection && selection.rangeCount > 0) {
+    // 選択が外れた（空文字になった）場合はポップオーバーを閉じる
+    if (!text || text.length === 0 || !selection || selection.rangeCount === 0) {
+      setAnchorPosition(null);
+      setSelectedText("");
+      setSelectedMessageId("");
+      return;
+    }
+
+    if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
 
       // コードブロックやインラインコード内の選択はハイライト対象にしない
