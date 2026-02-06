@@ -4,23 +4,18 @@ import { useState, useCallback } from "react";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
-import { useChatInput } from "../hooks/useChatInput";
-import { useGemini } from "../hooks/useGemini";
-import { useChatSettings } from "../hooks/useChatSettings";
+import { useChatInput } from "@/hooks/useChatInput";
+import { useGemini } from "@/hooks/useGemini";
+import { useChatSettings } from "@/hooks/useChatSettings";
 import ChatInputForm from "./ChatInputForm";
 import MessageList from "./MessageList";
 import DetailPopover from "./DetailPopover";
 import LoadingIndicator from "./LoadingIndicator";
-
-interface HighlightedSelection {
-  messageId: string;
-  text: string;
-  childMessageId: string;
-}
+import type { HighlightedSelection } from "@/types/messages";
 
 export default function ChatBox() {
   const { value, onChange, reset } = useChatInput();
-  const { quality, tone, setQuality, setTone } = useChatSettings();
+  const { quality, tone, sendMethod, setQuality, setTone, setSendMethod } = useChatSettings();
   const { messages, loading, error, sendMessage } = useGemini({ quality, tone });
   const [anchorPosition, setAnchorPosition] = useState<{ top: number; left: number } | null>(null);
   const [selectedText, setSelectedText] = useState<string>("");
@@ -95,12 +90,18 @@ export default function ChatBox() {
 
   const open = Boolean(anchorPosition);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSuggestedActionClick = useCallback(async (messageId: string, action: string) => {
+    if (!action.trim() || loading) return;
+
+    await sendMessage(action, messageId);
+  }, [loading, sendMessage]);
+
+  const handleSubmit = async () => {
     if (!value.text.trim() || loading) return;
-    
-    await sendMessage(value.text);
+
     reset();
+    await sendMessage(value.text);
+
   };
 
   return (
@@ -122,6 +123,7 @@ export default function ChatBox() {
           highlights={highlights}
           hoveredChildId={hoveredChildId}
           onHoverChild={setHoveredChildId}
+          onActionClick={handleSuggestedActionClick}
         />
 
         <LoadingIndicator loading={loading} />
@@ -144,6 +146,8 @@ export default function ChatBox() {
         tone={tone}
         setQuality={setQuality}
         setTone={setTone}
+        sendMethod={sendMethod}
+        setSendMethod={setSendMethod}
       />
     </>
   );

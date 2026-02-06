@@ -3,17 +3,7 @@
 import Stack from "@mui/material/Stack";
 import { GeminiMessage } from "../hooks/useGemini";
 import MessageItem from "./MessageItem";
-
-interface HighlightedSelection {
-  messageId: string;
-  text: string;
-  childMessageId: string;
-}
-
-interface UserMessage {
-  id: string;
-  content: string;
-}
+import type { HighlightedSelection, UserMessage } from "@/types/messages";
 
 interface MessageListProps {
   messages: GeminiMessage[];
@@ -23,9 +13,10 @@ interface MessageListProps {
   highlights: HighlightedSelection[];
   hoveredChildId: string;
   onHoverChild: (childId: string) => void;
+  onActionClick: (messageId: string, action: string) => void;
 }
 
-export default function MessageList({ messages, onTextSelect, onNotResolved, disabled = false, highlights, hoveredChildId, onHoverChild }: MessageListProps) {
+export default function MessageList({ messages, onTextSelect, onNotResolved, disabled = false, highlights, hoveredChildId, onHoverChild, onActionClick }: MessageListProps) {
   const assistantMessages = messages.filter(msg => msg.role === "assistant");
 
   if (assistantMessages.length === 0) {
@@ -75,6 +66,8 @@ export default function MessageList({ messages, onTextSelect, onNotResolved, dis
         highlights={messageHighlights}
         isHighlighted={isHighlighted}
         onHoverChild={onHoverChild}
+        suggestedActions={msg.suggestedActions}
+        onActionClick={onActionClick ? (action: string) => onActionClick(msg.id, action) : undefined}
       >
         {children.length > 0 && (
           <Stack spacing={2}>

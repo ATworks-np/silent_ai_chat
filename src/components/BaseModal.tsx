@@ -1,11 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { Box, IconButton, Stack, Typography } from "@mui/material";
 import Modal from "@mui/material/Modal";
 import CloseIcon from "@mui/icons-material/Close";
+import type { ReactNode } from "react";
 
-export interface BaseModalProps {
+interface BaseModalProps {
   open: boolean;
   onClose: () => void;
   title?: string;

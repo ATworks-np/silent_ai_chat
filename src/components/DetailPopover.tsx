@@ -24,16 +24,14 @@ export default function DetailPopover({ open, anchorPosition, onClose, onMoreDet
         horizontal: "left",
       }}
     >
-      <Box sx={{ p: 2 }}>
-        <RoundedButton 
-          variant="contained" 
-          color="primary"
-          onClick={onMoreDetails}
-          disabled={disabled}
-        >
-          もっとくわしく
-        </RoundedButton>
-      </Box>
+      <RoundedButton
+        variant="contained"
+        color="primary"
+        onClick={onMoreDetails}
+        disabled={disabled}
+      >
+        もっとくわしく
+      </RoundedButton>
     </Popover>
   );
 }

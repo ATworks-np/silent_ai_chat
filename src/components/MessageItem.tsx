@@ -13,18 +13,9 @@ import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github.css";
 import RoundedButton from "./RoundedButton";
-import {useMemo} from "react";
-
-interface UserMessage {
-  id: string;
-  content: string;
-}
-
-interface HighlightedSelection {
-  messageId: string;
-  text: string;
-  childMessageId: string;
-}
+import { useMemo } from "react";
+import type { UserMessage, HighlightedSelection } from "@/types/messages";
+import { Grid } from "@mui/material";
 
 interface MessageItemProps {
   messageId: string;
@@ -38,10 +29,26 @@ interface MessageItemProps {
   highlights?: HighlightedSelection[];
   isHighlighted?: boolean;
   onHoverChild?: (childId: string) => void;
+  suggestedActions?: string[];
+  onActionClick?: (action: string) => void;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export default function MessageItem({ messageId: _messageId, content, userMessages, onTextSelect, onNotResolved, disabled = false, depth = 0, children, highlights = [], isHighlighted = false, onHoverChild }: MessageItemProps) {
+export default function MessageItem({
+  messageId: _messageId,
+  content,
+  userMessages,
+  onTextSelect,
+  onNotResolved,
+  disabled = false,
+  depth = 0,
+  children,
+  highlights = [],
+  isHighlighted = false,
+  onHoverChild,
+  suggestedActions,
+  onActionClick,
+}: MessageItemProps) {
   
   // Create highlighted content with mark tags
   // コードブロック（``` ```）やインラインコード（`code`）の中は置換しない
@@ -239,16 +246,33 @@ export default function MessageItem({ messageId: _messageId, content, userMessag
           {highlightedContent}
         </ReactMarkdown>
       </Box>
-      <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
-        <RoundedButton
-          variant="outlined"
-          color="secondary"
-          onClick={onNotResolved}
-          disabled={disabled}
-        >
-          解決していない
-        </RoundedButton>
-      </Box>
+      <Grid container spacing={1} alignItems="center">
+        {suggestedActions && suggestedActions.slice(0, 2).map((action: string) => (
+          <Grid key={action} size={{ xs: 12, lg: 5}}>
+            <RoundedButton
+              variant="outlined"
+              color="secondary"
+              onClick={() => {
+                if (disabled || !onActionClick) return;
+                onActionClick(action);
+              }}
+              disabled={disabled}
+            >
+              {action}
+            </RoundedButton>
+          </Grid>
+        ))}
+        <Grid size={{ xs: 12, lg: 2 }}>
+          <RoundedButton
+            variant="outlined"
+            color="secondary"
+            onClick={onNotResolved}
+            disabled={disabled}
+          >
+            未解決
+          </RoundedButton>
+        </Grid>
+      </Grid>
       {children && (
         <Box sx={{ mt: 2 }}>
           {children}

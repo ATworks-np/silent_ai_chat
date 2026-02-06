@@ -5,19 +5,22 @@ import TextField from "@mui/material/TextField";
 import IconButton from "@mui/material/IconButton";
 import SendIcon from "@mui/icons-material/Send";
 import TuneIcon from "@mui/icons-material/Tune";
-import { useSettingsDialog } from "@/hooks/useSettingsDialog";
+import { useSettingsModal } from "@/hooks/useSettingsModal";
 import { SettingsModal } from "@/components/SettingsModal";
-import type { AnswerQuality, AnswerTone } from "@/hooks/useChatSettings";
+import type { AnswerQuality, AnswerTone, ChatSendMethod } from "@/hooks/useChatSettings";
 
 interface ChatInputFormProps {
   value: string;
   onChange: (value: string) => void;
-  onSubmit: (e: React.FormEvent) => void;
+  // フォーム側で preventDefault 済みのため、コールバックにはイベントを渡さない
+  onSubmit: () => Promise<void> | void;
   disabled?: boolean;
   quality: AnswerQuality;
   tone: AnswerTone;
   setQuality: (quality: AnswerQuality) => void;
   setTone: (tone: AnswerTone) => void;
+  sendMethod: ChatSendMethod;
+  setSendMethod: (method: ChatSendMethod) => void;
 }
 
 export default function ChatInputForm({
@@ -29,8 +32,32 @@ export default function ChatInputForm({
   tone,
   setQuality,
   setTone,
+  sendMethod,
+  setSendMethod,
 }: ChatInputFormProps) {
-  const { state, openDialog, closeDialog } = useSettingsDialog();
+  const { state, openModal, closeModal } = useSettingsModal();
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (disabled) return;
+
+    if (event.key !== "Enter") return;
+
+    // IME変換中は送信しない
+    if (event.nativeEvent.isComposing) return;
+
+    if (sendMethod === "enter") {
+      // Shift+Enter は改行として扱い、Enter単体で送信
+      if (event.shiftKey) return;
+
+      event.preventDefault();
+      void onSubmit();
+    } else if (sendMethod === "ctrlEnter") {
+      if (!event.ctrlKey) return;
+
+      event.preventDefault();
+      void onSubmit();
+    }
+  };
 
   return (
     <Box sx={{ 
@@ -42,11 +69,16 @@ export default function ChatInputForm({
       p: 3,
       zIndex: 1000,
     }}>
-      <form onSubmit={onSubmit}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void onSubmit();
+        }}
+      >
         <Stack spacing={1} sx={{ maxWidth: "800px", mx: "auto" }}>
           <Grid container spacing={2} alignItems="flex-end">
             <Grid size={{ xs: 1 }}>
-              <IconButton color="default" aria-label="設定" size="large" onClick={openDialog}>
+              <IconButton color="default" aria-label="設定" size="large" onClick={openModal}>
                 <TuneIcon />
               </IconButton>
             </Grid>
@@ -61,6 +93,7 @@ export default function ChatInputForm({
                 placeholder="メッセージを入力"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
+                onKeyDown={handleKeyDown}
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     borderRadius: 5,
@@ -84,11 +117,13 @@ export default function ChatInputForm({
       </form>
       <SettingsModal
         open={state.open}
-        onClose={closeDialog}
+        onClose={closeModal}
         quality={quality}
         tone={tone}
         setQuality={setQuality}
         setTone={setTone}
+        sendMethod={sendMethod}
+        setSendMethod={setSendMethod}
       />
     </Box>
   );
