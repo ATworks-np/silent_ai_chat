@@ -15,13 +15,37 @@ interface MessageListProps {
   hoveredChildId: string;
   onHoverChild: (childId: string) => void;
   onActionClick: (messageId: string, action: string) => void;
+  onShowSuggestions?: (messageId: string, content: string, actions: string[]) => void;
+  historyTargetMessageId?: string | null;
+  onHistoryTargetChange?: (messageId: string | null) => void;
 }
 
-export default function MessageList({ messages, onTextSelect, onNotResolved, disabled = false, highlights, hoveredChildId, onHoverChild, onActionClick }: MessageListProps) {
+export default function MessageList({ messages, onTextSelect, onNotResolved, disabled = false, highlights, hoveredChildId, onHoverChild, onActionClick, onShowSuggestions, historyTargetMessageId, onHistoryTargetChange }: MessageListProps) {
   const assistantMessages = messages.filter(msg => msg.role === "assistant");
 
   if (assistantMessages.length === 0) {
     return null;
+  }
+
+  // 履歴ターゲットに選ばれている回答と、その親以上（祖先）にあたる回答IDの集合を作る
+  const historyChainIds = new Set<string>();
+
+  if (historyTargetMessageId) {
+    let currentId: string | undefined | null = historyTargetMessageId;
+
+    while (currentId) {
+      const current = assistantMessages.find((m) => m.id === currentId);
+      if (!current) break;
+
+      historyChainIds.add(current.id);
+
+      if (!current.parentId) break;
+
+      const parentAssistant = assistantMessages.find((m) => m.id === current.parentId);
+      if (!parentAssistant) break;
+
+      currentId = parentAssistant.id;
+    }
   }
 
   // Build tree structure (論理的な親子関係は維持しつつ、DOM はフラットに描画する)
@@ -66,6 +90,10 @@ export default function MessageList({ messages, onTextSelect, onNotResolved, dis
               ? [{ id: relatedUserMessages[relatedUserMessages.length - 1].id, content: relatedUserMessages[relatedUserMessages.length - 1].content }]
               : [];
 
+          const suggestedActions = msg.suggestedActions ?? [];
+          const isHistoryTarget = historyTargetMessageId === msg.id;
+          const isInHistoryChain = historyChainIds.has(msg.id);
+
           return (
             <MessageItem
               key={msg.id}
@@ -81,6 +109,10 @@ export default function MessageList({ messages, onTextSelect, onNotResolved, dis
               onHoverChild={onHoverChild}
               suggestedActions={msg.suggestedActions}
               onActionClick={onActionClick ? (action: string) => onActionClick(msg.id, action) : undefined}
+              onShowSuggestions={onShowSuggestions ? () => onShowSuggestions(msg.id, msg.content, suggestedActions) : undefined}
+              isHistoryTarget={isHistoryTarget}
+              isInHistoryChain={isInHistoryChain}
+              onToggleHistoryTarget={onHistoryTargetChange ? () => onHistoryTargetChange(isHistoryTarget ? null : msg.id) : undefined}
             />
           );
         })}

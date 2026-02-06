@@ -51,9 +51,6 @@ export function useGemini({ quality, tone }: UseGeminiOptions) {
   const [error, setError] = useState<string | null>(null);
   const { content: systemPrompt } = useSystemPrompt();
 
-  const fallbackSystemPrompt =
-    "質問された内容に直接答える核心部分のみを端的に記述してください。事実を箇条書きまたはで述べてください。";
-
   const sendMessage = useCallback(
     async (userMessage: string, parentId?: string, assistantIdOverride?: string) => {
       if (!userMessage.trim()) return;
@@ -63,16 +60,60 @@ export function useGemini({ quality, tone }: UseGeminiOptions) {
 
       try {
         // 1. これまでの会話履歴を contents 配列として組み立てる（必要に応じて）
-        // parentId が指定されている場合は、そのメッセージまでの履歴をコンテキストとして含める
+        // parentId が指定されている場合は、その「回答」と、その先祖（親・祖父…）にあたる回答および
+        // それぞれを導いた直近のユーザーメッセージを、古いものから順にコンテキストとして含める
         let historyContents: Array<{ role: "user" | "model"; parts: { text: string }[] }> = [];
 
         if (parentId && messages.length > 0) {
           const parentIndex = messages.findIndex((m) => m.id === parentId);
 
           if (parentIndex !== -1) {
-            const history = messages.slice(0, parentIndex + 1);
+            const chain: typeof messages = [];
 
-            historyContents = history.map((m) => ({
+            // いまの回答から親・祖父…とさかのぼって、回答チェーンを作る
+            let currentAssistant = messages[parentIndex];
+
+            // 念のため role チェック（user の id が parentId に来ることは通常想定しない）
+            while (currentAssistant) {
+              const currentIndex = messages.findIndex((m) => m.id === currentAssistant.id);
+
+              // この回答に直接つながる直近のユーザーメッセージを特定
+              const relatedUserMessages = messages.filter((m, index) => (
+                index < currentIndex &&
+                m.role === "user" &&
+                m.parentId === currentAssistant.parentId
+              ));
+
+              const sourceUser =
+                relatedUserMessages.length > 0
+                  ? relatedUserMessages[relatedUserMessages.length - 1]
+                  : null;
+
+              if (sourceUser) {
+                chain.push(sourceUser);
+              }
+              chain.push(currentAssistant);
+
+              // さらに上の先祖の回答（parentId をたどる）を探す
+              if (!currentAssistant.parentId) {
+                break;
+              }
+
+              const nextAssistant = messages.find(
+                (m) => m.id === currentAssistant.parentId && m.role === "assistant",
+              );
+
+              if (!nextAssistant) {
+                break;
+              }
+
+              currentAssistant = nextAssistant;
+            }
+
+            // 古い先祖から順に並ぶように反転
+            const orderedChain = chain.reverse();
+
+            historyContents = orderedChain.map((m) => ({
               role: m.role === "user" ? "user" : "model",
               parts: [{ text: m.content }],
             }));
@@ -122,7 +163,7 @@ export function useGemini({ quality, tone }: UseGeminiOptions) {
 
         const genAI = new GoogleGenerativeAI(apiKey);
 
-        const basePrompt = systemPrompt || fallbackSystemPrompt;
+        const basePrompt = systemPrompt;
         const qualityInstruction = buildQualityInstruction(quality);
         const toneInstruction = buildToneInstruction(tone);
 

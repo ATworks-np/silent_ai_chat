@@ -31,6 +31,11 @@ interface MessageItemProps {
   onHoverChild?: (childId: string) => void;
   suggestedActions?: string[];
   onActionClick?: (action: string) => void;
+  // チェックボタンで選択されている回答かどうか
+  isHistoryTarget?: boolean;
+  // 選択された回答とその親以上（祖先）に含まれる回答かどうか
+  isInHistoryChain?: boolean;
+  onToggleHistoryTarget?: () => void;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -48,6 +53,9 @@ export default function MessageItem({
   onHoverChild,
   suggestedActions,
   onActionClick,
+  isHistoryTarget = false,
+   isInHistoryChain = false,
+  onToggleHistoryTarget,
 }: MessageItemProps) {
   
   // Create highlighted content with mark tags
@@ -107,10 +115,14 @@ export default function MessageItem({
         sx={{
           p: 2,
           color: "text.primary",
+          // Reddit風ツリー用の縦線（depth が 0 以外のときだけ表示）
+          borderLeft: depth > 0 ? "2px solid" : undefined,
           borderLeftColor: depth > 0 ? "secondary.main" : undefined,
           transition: "background-color 0.2s ease",
-          backgroundColor: isHighlighted ? "secondary.light" : "background.paper",
-
+          backgroundColor:
+            isHighlighted || isHistoryTarget || isInHistoryChain
+              ? "secondary.light"
+              : "background.paper",
         }}
       >
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
@@ -244,43 +256,91 @@ export default function MessageItem({
               },
             }}
           >
-            {highlightedContent}
-          </ReactMarkdown>
-        </Box>
-        <Grid container spacing={1} alignItems="center">
-          {suggestedActions && suggestedActions.slice(0, 2).map((action: string) => (
-            <Grid key={action} size={{ xs: 12, lg: 5}}>
+          {highlightedContent}
+        </ReactMarkdown>
+      </Box>
+      {/* 履歴ターゲット選択用の小さなチェックボタン（Paper右下想定） */}
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+        <RoundedButton
+          variant={isHistoryTarget ? "contained" : "outlined"}
+          color="secondary"
+          size="small"
+          onClick={() => {
+            if (disabled) return;
+            if (onToggleHistoryTarget) {
+              onToggleHistoryTarget();
+            }
+          }}
+          disabled={disabled}
+        >
+          履歴に含める
+        </RoundedButton>
+      </Box>
+      <Accordion
+        disableGutters
+        elevation={0}
+        sx={{
+          mt: 1,
+          backgroundColor: "transparent",
+          "&::before": { display: "none" },
+        }}
+      >
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon sx={{ fontSize: 16 }} />}
+          sx={{
+            minHeight: 0,
+            px: 0,
+            justifyContent: "flex-start", // 全体を左寄せにする
+            "& .MuiAccordionSummary-content": {
+              margin: 0,
+              flexGrow: 0, // 幅をコンテンツ分のみにする
+            },
+            "& .MuiAccordionSummary-expandIconWrapper": {
+              marginLeft: "4px", // テキストとアイコンの隙間を調整
+            },
+          }}
+        >
+          <Typography variant="caption" color="text.secondary">
+            次の質問をみる
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails sx={{ px: 0, pt: 1, pb: 0 }}>
+          <Grid container spacing={1} alignItems="center">
+            {suggestedActions && suggestedActions.slice(0, 2).map((action: string) => (
+              <Grid key={action} size={{ xs: 12, md: 5 }}>
+                <RoundedButton
+                  variant="outlined"
+                  color="secondary"
+                  onClick={() => {
+                    if (disabled || !onActionClick) return;
+                    onActionClick(action);
+                  }}
+                  disabled={disabled}
+                >
+                  {action}
+                </RoundedButton>
+              </Grid>
+            ))}
+            <Grid size={{ xs: 12, md: 2 }}>
               <RoundedButton
                 variant="outlined"
                 color="secondary"
-                onClick={() => {
-                  if (disabled || !onActionClick) return;
-                  onActionClick(action);
-                }}
+                onClick={onNotResolved}
                 disabled={disabled}
               >
-                {action}
+                未解決
               </RoundedButton>
             </Grid>
-          ))}
-          <Grid size={{ xs: 12, lg: 2 }}>
-            <RoundedButton
-              variant="outlined"
-              color="secondary"
-              onClick={onNotResolved}
-              disabled={disabled}
-            >
-              未解決
-            </RoundedButton>
           </Grid>
-        </Grid>
-        {children && (
-          <Box sx={{ mt: 2 }}>
-            {children}
-          </Box>
-        )}
-      </Paper>
-    </Box>
+        </AccordionDetails>
+      </Accordion>
+      {children && (
+        <Box sx={{ mt: 2 }}>
+          {children}
+        </Box>
+      )}
+    </Paper>
+  </Box>
 
   );
 }

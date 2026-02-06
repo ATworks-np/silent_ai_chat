@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
 import { useChatInput } from "@/hooks/useChatInput";
 import { useGemini } from "@/hooks/useGemini";
 import { useChatSettings } from "@/hooks/useChatSettings";
@@ -11,6 +12,7 @@ import ChatInputForm from "./ChatInputForm";
 import MessageList from "./MessageList";
 import DetailPopover from "./DetailPopover";
 import LoadingIndicator from "./LoadingIndicator";
+import NextActionsModal from "./NextActionsModal";
 import type { HighlightedSelection } from "@/types/messages";
 
 export default function ChatBox() {
@@ -22,6 +24,12 @@ export default function ChatBox() {
   const [selectedMessageId, setSelectedMessageId] = useState<string>("");
   const [highlights, setHighlights] = useState<HighlightedSelection[]>([]);
   const [hoveredChildId, setHoveredChildId] = useState<string>("");
+  const [activeSuggestions, setActiveSuggestions] = useState<{
+    messageId: string;
+    content: string;
+    actions: string[];
+  } | null>(null);
+  const [historyTargetMessageId, setHistoryTargetMessageId] = useState<string | null>(null);
 
   const handleTextSelect = useCallback((messageId: string) => {
     const selection = window.getSelection();
@@ -108,13 +116,40 @@ export default function ChatBox() {
     if (!value.text.trim() || loading) return;
 
     reset();
-    await sendMessage(value.text);
+    // 履歴ターゲットが選択されている場合は、そのメッセージの履歴を含めて送信
+    if (historyTargetMessageId) {
+      await sendMessage(value.text, historyTargetMessageId);
+    } else {
+      await sendMessage(value.text);
+    }
 
   };
 
   return (
-    <>
-      <Stack alignItems="center" spacing={2} sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", px: 2, pb: "120px" }}>
+    <Box
+      sx={{ minHeight: "100vh" }}
+      onClick={() => {
+        // 背景クリックで次の質問パネルを閉じる
+        setActiveSuggestions(null);
+      }}
+    >
+      <Stack
+        alignItems="center"
+        spacing={2}
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          px: 2,
+          pb: "120px",
+        }}
+        onClick={(event) => {
+          // コンテンツ内のクリックは背景クリック扱いにしない
+          event.stopPropagation();
+        }}
+      >
         <Typography variant="h3" component="h1" color="text.primary" fontWeight="bold">
           しゃべらないAIチャット
         </Typography>
@@ -132,6 +167,19 @@ export default function ChatBox() {
           hoveredChildId={hoveredChildId}
           onHoverChild={setHoveredChildId}
           onActionClick={handleSuggestedActionClick}
+          onShowSuggestions={(messageId, content, actions) => {
+            if (!actions || actions.length === 0) {
+              // 提案アクションを持たないPaperや別の領域をクリックした場合はパネルを閉じる
+              setActiveSuggestions(null);
+              return;
+            }
+
+            setActiveSuggestions({ messageId, content, actions });
+          }}
+          historyTargetMessageId={historyTargetMessageId}
+          onHistoryTargetChange={(messageId) => {
+            setHistoryTargetMessageId(messageId);
+          }}
         />
 
         <LoadingIndicator loading={loading} />
@@ -145,6 +193,23 @@ export default function ChatBox() {
         />
       </Stack>
 
+      <NextActionsModal
+        open={Boolean(activeSuggestions)}
+        actions={activeSuggestions?.actions ?? []}
+        loading={loading}
+        onActionClick={(action) => {
+          if (!activeSuggestions) return;
+          void handleSuggestedActionClick(activeSuggestions.messageId, action);
+        }}
+        onNotResolved={() => {
+          if (!activeSuggestions) return;
+          void handleNotResolved(activeSuggestions.messageId, activeSuggestions.content);
+        }}
+        onClose={() => {
+          setActiveSuggestions(null);
+        }}
+      />
+
       <ChatInputForm
         value={value.text}
         onChange={onChange}
@@ -156,7 +221,9 @@ export default function ChatBox() {
         setTone={setTone}
         sendMethod={sendMethod}
         setSendMethod={setSendMethod}
+        // 入力欄クリックも背景扱いにならないようにする
+        // ラッパーの Box で onClick stopPropagation 済みのためここは不要
       />
-    </>
+    </Box>
   );
 }
