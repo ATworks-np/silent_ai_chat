@@ -66,7 +66,7 @@ export default function ChatInputForm({
       left: 0, 
       right: 0, 
       backgroundColor: "background.default",
-      p: 3,
+      p: { xs: 1, sm: 3},
       zIndex: 1000,
     }}>
       <form
@@ -76,13 +76,19 @@ export default function ChatInputForm({
         }}
       >
         <Stack spacing={1} sx={{ maxWidth: "800px", mx: "auto" }}>
-          <Grid container spacing={2} alignItems="flex-end">
+          <Grid container  spacing={{ xs: 0, md: 2 }} alignItems="center">
             <Grid size={{ xs: 1 }}>
-              <IconButton color="default" aria-label="設定" size="large" onClick={openModal}>
+              <IconButton
+                color="default"
+                aria-label="設定"
+                size="large"
+                onClick={openModal}
+                sx={{ fontSize: { xs: '1.7rem', md: '2rem'} }}
+              >
                 <TuneIcon />
               </IconButton>
             </Grid>
-            <Grid size={{ xs: 10 }}>
+            <Grid size={{ xs: 10}}>
               <TextField
                 fullWidth
                 multiline
@@ -102,14 +108,14 @@ export default function ChatInputForm({
                 }}
               />
             </Grid>
-            <Grid size={{ xs: 1 }}>
+            <Grid sx={{p: 0}} size={{ xs: 1 }}>
               <IconButton
                 type="submit"
                 color="primary"
-                size="large"
+                sx={{ fontSize: { xs: '1.7rem', md: '2rem'} }}
                 disabled={disabled}
               >
-                <SendIcon />
+                <SendIcon fontSize="inherit"/>
               </IconButton>
             </Grid>
           </Grid>

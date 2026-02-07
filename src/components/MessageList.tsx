@@ -109,7 +109,6 @@ export default function MessageList({ messages, onTextSelect, onNotResolved, dis
               onHoverChild={onHoverChild}
               suggestedActions={msg.suggestedActions}
               onActionClick={onActionClick ? (action: string) => onActionClick(msg.id, action) : undefined}
-              onShowSuggestions={onShowSuggestions ? () => onShowSuggestions(msg.id, msg.content, suggestedActions) : undefined}
               isHistoryTarget={isHistoryTarget}
               isInHistoryChain={isInHistoryChain}
               onToggleHistoryTarget={onHistoryTargetChange ? () => onHistoryTargetChange(isHistoryTarget ? null : msg.id) : undefined}

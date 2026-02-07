@@ -14,6 +14,7 @@ import DetailPopover from "./DetailPopover";
 import LoadingIndicator from "./LoadingIndicator";
 import NextActionsModal from "./NextActionsModal";
 import type { HighlightedSelection } from "@/types/messages";
+import {Grid} from "@mui/material";
 
 export default function ChatBox() {
   const { value, onChange, reset } = useChatInput();
@@ -150,9 +151,19 @@ export default function ChatBox() {
           event.stopPropagation();
         }}
       >
-        <Typography variant="h3" component="h1" color="text.primary" fontWeight="bold">
-          しゃべらないAIチャット
-        </Typography>
+        <Grid container spacing={0} sx={{width: '100%'}}>
+          <Grid size={{xs: 12, md:6}} >
+            <Typography sx={{ textAlign: { xs: 'left', md: 'right' } }}　variant="h5" component="h1" color="text.primary" fontWeight="bold">
+              しゃべらない
+            </Typography>
+          </Grid>
+          <Grid size={{xs: 12, md:6}}>
+            <Typography variant="h5" component="h1" color="text.primary" fontWeight="bold">
+              AIチャット
+            </Typography>
+          </Grid>
+        </Grid>
+
 
         {error && (
           <Alert severity="error">{error}</Alert>

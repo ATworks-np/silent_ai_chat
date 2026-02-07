@@ -15,7 +15,8 @@ import "highlight.js/styles/github.css";
 import RoundedButton from "./RoundedButton";
 import { useMemo } from "react";
 import type { UserMessage, HighlightedSelection } from "@/types/messages";
-import { Grid } from "@mui/material";
+import {Divider, Grid, IconButton} from "@mui/material";
+import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 
 interface MessageItemProps {
   messageId: string;
@@ -31,9 +32,7 @@ interface MessageItemProps {
   onHoverChild?: (childId: string) => void;
   suggestedActions?: string[];
   onActionClick?: (action: string) => void;
-  // チェックボタンで選択されている回答かどうか
   isHistoryTarget?: boolean;
-  // 選択された回答とその親以上（祖先）に含まれる回答かどうか
   isInHistoryChain?: boolean;
   onToggleHistoryTarget?: () => void;
 }
@@ -110,19 +109,19 @@ export default function MessageItem({
   }, [content, highlights]);
 
   return (
-    <Box sx={{ pl: depth * 2 }}>
-      <Paper
+    <Box sx={{ pl: depth * 2}}>
+      <Box
         sx={{
-          p: 2,
+          py: 2,
+          pl: depth>0?2:0,
           color: "text.primary",
-          // Reddit風ツリー用の縦線（depth が 0 以外のときだけ表示）
           borderLeft: depth > 0 ? "2px solid" : undefined,
           borderLeftColor: depth > 0 ? "secondary.main" : undefined,
           transition: "background-color 0.2s ease",
           backgroundColor:
             isHighlighted || isHistoryTarget || isInHistoryChain
               ? "secondary.light"
-              : "background.paper",
+              : "",
         }}
       >
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
@@ -256,91 +255,93 @@ export default function MessageItem({
               },
             }}
           >
-          {highlightedContent}
-        </ReactMarkdown>
-      </Box>
-      {/* 履歴ターゲット選択用の小さなチェックボタン（Paper右下想定） */}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
-        <RoundedButton
-          variant={isHistoryTarget ? "contained" : "outlined"}
-          color="secondary"
-          size="small"
-          onClick={() => {
-            if (disabled) return;
-            if (onToggleHistoryTarget) {
-              onToggleHistoryTarget();
-            }
-          }}
-          disabled={disabled}
-        >
-          履歴に含める
-        </RoundedButton>
-      </Box>
-      <Accordion
-        disableGutters
-        elevation={0}
-        sx={{
-          mt: 1,
-          backgroundColor: "transparent",
-          "&::before": { display: "none" },
-        }}
-      >
-        <AccordionSummary
-          expandIcon={<ExpandMoreIcon sx={{ fontSize: 16 }} />}
-          sx={{
-            minHeight: 0,
-            px: 0,
-            justifyContent: "flex-start", // 全体を左寄せにする
-            "& .MuiAccordionSummary-content": {
-              margin: 0,
-              flexGrow: 0, // 幅をコンテンツ分のみにする
-            },
-            "& .MuiAccordionSummary-expandIconWrapper": {
-              marginLeft: "4px", // テキストとアイコンの隙間を調整
-            },
-          }}
-        >
-          <Typography variant="caption" color="text.secondary">
-            次の質問をみる
-          </Typography>
-        </AccordionSummary>
-        <AccordionDetails sx={{ px: 0, pt: 1, pb: 0 }}>
-          <Grid container spacing={1} alignItems="center">
-            {suggestedActions && suggestedActions.slice(0, 2).map((action: string) => (
-              <Grid key={action} size={{ xs: 12, md: 5 }}>
-                <RoundedButton
-                  variant="outlined"
-                  color="secondary"
-                  onClick={() => {
-                    if (disabled || !onActionClick) return;
-                    onActionClick(action);
-                  }}
-                  disabled={disabled}
-                >
-                  {action}
-                </RoundedButton>
-              </Grid>
-            ))}
-            <Grid size={{ xs: 12, md: 2 }}>
-              <RoundedButton
-                variant="outlined"
-                color="secondary"
-                onClick={onNotResolved}
-                disabled={disabled}
-              >
-                未解決
-              </RoundedButton>
-            </Grid>
-          </Grid>
-        </AccordionDetails>
-      </Accordion>
-      {children && (
-        <Box sx={{ mt: 2 }}>
-          {children}
+            {highlightedContent}
+          </ReactMarkdown>
         </Box>
-      )}
-    </Paper>
-  </Box>
+        <Box　sx={{position: "relative"}}>
+          <Accordion
+            disableGutters
+            elevation={0}
+            sx={{
+              mt: 1,
+              backgroundColor: "transparent",
+              "&::before": { display: "none" },
+            }}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon sx={{ fontSize: 16 }} />}
+              sx={{
+                minHeight: 0,
+                px: 0,
+                justifyContent: "flex-start", // 全体を左寄せにする
+                "& .MuiAccordionSummary-content": {
+                  margin: 0,
+                  flexGrow: 0, // 幅をコンテンツ分のみにする
+                },
+                "& .MuiAccordionSummary-expandIconWrapper": {
+                  marginLeft: "4px", // テキストとアイコンの隙間を調整
+                },
+              }}
+            >
+              <Typography variant="caption" color="text.secondary">
+                次の質問をみる
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails sx={{ px: 0, pt: 1, pb: 0 }}>
+              <Grid container spacing={1} alignItems="center">
+                <Grid size={{ xs: 12, md: 10 }}>
+                  <Stack direction='row' spacing={2}>
+                    {suggestedActions && suggestedActions.slice(0, 2).map((action: string) => (
+                      <RoundedButton
+                        key={action}
+                        variant="outlined"
+                        color="secondary"
+                        onClick={() => {
+                          if (disabled || !onActionClick) return;
+                          onActionClick(action);
+                        }}
+                        disabled={disabled}
+                      >
+                        {action}
+                      </RoundedButton>
 
+                    ))}
+                  </Stack>
+                </Grid>
+                <Grid size={{ xs: 12, md: 2 }}>
+                  <RoundedButton
+                    variant="outlined"
+                    color="secondary"
+                    onClick={onNotResolved}
+                    disabled={disabled}
+                  >
+                    未解決
+                  </RoundedButton>
+                </Grid>
+              </Grid>
+            </AccordionDetails>
+          </Accordion>
+
+          <Box  sx={{ position: "absolute", top: 0, right: 0 }}>
+            <IconButton
+              color={isHistoryTarget ? "secondary" : "default"}
+              size="small"
+              onClick={() => !disabled && onToggleHistoryTarget?.()}
+              disabled={disabled}
+            >
+              <PlaylistAddCheckIcon />
+            </IconButton>
+          </Box>
+        </Box>
+
+        {children && (
+          <Box sx={{ mt: 2 }}>
+            {children}
+          </Box>
+        )}
+
+      </Box>
+      <Divider sx={{mt: 2}}/>
+    </Box>
   );
 }
