@@ -5,6 +5,8 @@ import { GeminiMessage } from "../hooks/useGemini";
 import MessageItem from "./MessageItem";
 import type { HighlightedSelection, UserMessage } from "@/types/messages";
 import { Box } from "@mui/material";
+import IconButton from "@mui/material/IconButton";
+import DoDisturbOnOutlinedIcon from '@mui/icons-material/DoDisturbOnOutlined';
 
 interface MessageListProps {
   messages: GeminiMessage[];
@@ -48,75 +50,104 @@ export default function MessageList({ messages, onTextSelect, onNotResolved, dis
     }
   }
 
-  // Build tree structure (論理的な親子関係は維持しつつ、DOM はフラットに描画する)
+  // Build tree structure (親子関係を維持し、DOMもネストして描画する)
   const rootMessages = assistantMessages.filter(msg => !msg.parentId);
-  
+
   const getChildren = (parentId: string): GeminiMessage[] => {
     return assistantMessages.filter(msg => msg.parentId === parentId);
   };
 
-  // フラットな一覧（depth 情報付き）に変換
-  const flattened: { msg: GeminiMessage; depth: number }[] = [];
+  // 再帰的にメッセージとその子メッセージをレンダリングする関数
+  const renderMessageTree = (msg: GeminiMessage, depth: number) => {
+    // Find highlights for this message
+    const messageHighlights = highlights.filter(h => h.messageId === msg.id);
 
-  const walk = (msg: GeminiMessage, depth: number) => {
-    flattened.push({ msg, depth });
+    // Check if this message should be highlighted (when hovering over corresponding mark)
+    const isHighlighted = msg.id === hoveredChildId;
+
+    // Find the userメッセージ that directly led to this AI回答
+    const assistantIndex = messages.findIndex((m) => m.id === msg.id);
+    const relatedUserMessages = messages.filter((m, index) => (
+      index < assistantIndex &&
+      m.role === "user" &&
+      m.parentId === msg.parentId
+    ));
+
+    // 直近のものだけを「もとになったメッセージ」として採用
+    const sourceUserMessages: UserMessage[] =
+      relatedUserMessages.length > 0
+        ? [{ id: relatedUserMessages[relatedUserMessages.length - 1].id, content: relatedUserMessages[relatedUserMessages.length - 1].content }]
+        : [];
+
+    const suggestedActions = msg.suggestedActions ?? [];
+    const isHistoryTarget = historyTargetMessageId === msg.id;
+    const isInHistoryChain = historyChainIds.has(msg.id);
+
+    // Get children of this message
     const children = getChildren(msg.id);
-    children.forEach(child => walk(child, depth + 1));
-  };
 
-  rootMessages.forEach(root => walk(root, 0));
+    return (
+      <Box 
+        key={msg.id} 
+        sx={{
+          mb: 2,
+          overflow: 'hidden'
+        }}
+      >
+        <MessageItem
+          messageId={msg.id}
+          content={msg.content}
+          userMessages={sourceUserMessages}
+          onTextSelect={() => onTextSelect(msg.id)}
+          onNotResolved={() => onNotResolved(msg.id, msg.content)}
+          disabled={disabled}
+          depth={depth}
+          highlights={messageHighlights}
+          isHighlighted={isHighlighted}
+          onHoverChild={onHoverChild}
+          suggestedActions={suggestedActions}
+          onActionClick={onActionClick ? (action: string) => onActionClick(msg.id, action) : undefined}
+          isHistoryTarget={isHistoryTarget}
+          isInHistoryChain={isInHistoryChain}
+          onToggleHistoryTarget={onHistoryTargetChange ? () => onHistoryTargetChange(isHistoryTarget ? null : msg.id) : undefined}
+        />
+
+        {children.length > 0 && (
+          <Box sx={{ pb: 2 }}>
+            <Stack direction='row' sx={{pl: 2}}>
+              <Stack alignItems='flex-end' direction='column' >
+                <IconButton sx={{ p: 0, fontSize: { xs: '1rem', md: '1rem'} }}>
+                  <DoDisturbOnOutlinedIcon color='secondary' fontSize="inherit"/>
+                </IconButton>
+                <Box
+                  sx={{
+                    height: '100%',
+                    borderLeft: 2,
+                    borderLeftColor: 'divider',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      borderLeftColor: 'primary.main'
+                    },
+                  }}
+                />
+              </Stack>
+
+              <Stack>
+                {children.map(child => renderMessageTree(child, depth + 1))}
+              </Stack>
+
+            </Stack>
+          </Box>
+        )}
+      </Box>
+    );
+  };
 
   return (
     <Box sx={{maxWidth: "800px"}}>
-      <Stack spacing={2} sx={{ mt: 3,  mx: "auto" }}>
-        {flattened.map(({ msg, depth }) => {
-          // Find highlights for this message
-          const messageHighlights = highlights.filter(h => h.messageId === msg.id);
-
-          // Check if this message should be highlighted (when hovering over corresponding mark)
-          const isHighlighted = msg.id === hoveredChildId;
-
-          // Find the userメッセージ that directly led to this AI回答
-          const assistantIndex = messages.findIndex((m) => m.id === msg.id);
-          const relatedUserMessages = messages.filter((m, index) => (
-            index < assistantIndex &&
-            m.role === "user" &&
-            m.parentId === msg.parentId
-          ));
-
-          // 直近のものだけを「もとになったメッセージ」として採用
-          const sourceUserMessages: UserMessage[] =
-            relatedUserMessages.length > 0
-              ? [{ id: relatedUserMessages[relatedUserMessages.length - 1].id, content: relatedUserMessages[relatedUserMessages.length - 1].content }]
-              : [];
-
-          const suggestedActions = msg.suggestedActions ?? [];
-          const isHistoryTarget = historyTargetMessageId === msg.id;
-          const isInHistoryChain = historyChainIds.has(msg.id);
-
-          return (
-            <MessageItem
-              key={msg.id}
-              messageId={msg.id}
-              content={msg.content}
-              userMessages={sourceUserMessages}
-              onTextSelect={() => onTextSelect(msg.id)}
-              onNotResolved={() => onNotResolved(msg.id, msg.content)}
-              disabled={disabled}
-              depth={depth}
-              highlights={messageHighlights}
-              isHighlighted={isHighlighted}
-              onHoverChild={onHoverChild}
-              suggestedActions={msg.suggestedActions}
-              onActionClick={onActionClick ? (action: string) => onActionClick(msg.id, action) : undefined}
-              isHistoryTarget={isHistoryTarget}
-              isInHistoryChain={isInHistoryChain}
-              onToggleHistoryTarget={onHistoryTargetChange ? () => onHistoryTargetChange(isHistoryTarget ? null : msg.id) : undefined}
-            />
-          );
-        })}
+      <Stack spacing={2} sx={{ mt: 3, mx: "auto" }}>
+        {rootMessages.map(msg => renderMessageTree(msg, 0))}
       </Stack>
     </Box>
-
   );
 }
