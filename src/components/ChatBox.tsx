@@ -127,101 +127,89 @@ export default function ChatBox() {
   };
 
   return (
-    <Box
-      sx={{ minHeight: "100vh" }}
-      onClick={() => {
-        // 背景クリックで次の質問パネルを閉じる
-        setActiveSuggestions(null);
-      }}
-    >
-      <Stack
-        alignItems="center"
-        spacing={2}
-        sx={{
-          minHeight: "100dvh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          px: 2,
-          pb: "120px",
-        }}
-        onClick={(event) => {
-          // コンテンツ内のクリックは背景クリック扱いにしない
-          event.stopPropagation();
-        }}
+    <>
+      <Box
+        sx={{ minHeight: "100vh" }}
       >
-        <Grid container spacing={0} sx={{width: '100%'}}>
-          <Grid size={{xs: 12, sm:12}} sx={{ textAlign: { xs: 'center' } }}>
-            <Image src="/icon.png" alt="icon" height={100} width={100} />
-          </Grid>
-          <Grid size={{xs: 12, sm:6}} sx={{ textAlign: { xs: 'center', sm: 'right' } }}>
-            <Typography 　variant="caption" component="h1" color="text.primary" >
-              しゃべらない
-            </Typography>
-          </Grid>
-          <Grid size={{xs: 12, sm:6}} sx={{ textAlign: { xs: 'center', sm: 'left'} }}>
-            <Typography variant="caption" component="h1" color="text.primary" >
-              AIチャット
-            </Typography>
-          </Grid>
-        </Grid>
-
-
-        {error && (
-          <Alert severity="error">{error}</Alert>
-        )}
-
-        <MessageList
-          messages={messages}
-          onTextSelect={handleTextSelect}
-          onNotResolved={handleNotResolved}
-          disabled={loading}
-          highlights={highlights}
-          hoveredChildId={hoveredChildId}
-          onHoverChild={setHoveredChildId}
-          onActionClick={handleSuggestedActionClick}
-          onShowSuggestions={(messageId, content, actions) => {
-            if (!actions || actions.length === 0) {
-              // 提案アクションを持たないPaperや別の領域をクリックした場合はパネルを閉じる
-              setActiveSuggestions(null);
-              return;
-            }
-
-            setActiveSuggestions({ messageId, content, actions });
+        <Stack
+          alignItems="center"
+          spacing={2}
+          sx={{
+            minHeight: "100dvh",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            px: 2,
+            pb: "120px",
           }}
-          historyTargetMessageId={historyTargetMessageId}
-          onHistoryTargetChange={(messageId) => {
-            setHistoryTargetMessageId(messageId);
+          onClick={(event) => {
+            // コンテンツ内のクリックは背景クリック扱いにしない
+            event.stopPropagation();
+          }}
+        >
+          <Grid container spacing={0} sx={{width: '100%'}}>
+            <Grid size={{xs: 12, sm:12}} sx={{ textAlign: { xs: 'center' } }}>
+              <Image src="/icon.png" alt="icon" height={100} width={100} />
+            </Grid>
+            <Grid size={{xs: 12, sm:6}} sx={{ textAlign: { xs: 'center', sm: 'right' } }}>
+              <Typography 　variant="caption" component="h1" color="text.primary" >
+                しゃべらない
+              </Typography>
+            </Grid>
+            <Grid size={{xs: 12, sm:6}} sx={{ textAlign: { xs: 'center', sm: 'left'} }}>
+              <Typography variant="caption" component="h1" color="text.primary" >
+                AIチャット
+              </Typography>
+            </Grid>
+          </Grid>
+
+
+          {error && (
+            <Alert severity="error">{error}</Alert>
+          )}
+
+          <MessageList
+            messages={messages}
+            onTextSelect={handleTextSelect}
+            onNotResolved={handleNotResolved}
+            disabled={loading}
+            highlights={highlights}
+            hoveredChildId={hoveredChildId}
+            onHoverChild={setHoveredChildId}
+            onActionClick={handleSuggestedActionClick}
+            historyTargetMessageId={historyTargetMessageId}
+            onHistoryTargetChange={(messageId:string | null) => {
+              setHistoryTargetMessageId(messageId);
+            }}
+          />
+
+          <DetailPopover
+            open={open}
+            anchorPosition={anchorPosition}
+            onClose={handleClosePopover}
+            onMoreDetails={handleMoreDetails}
+            disabled={loading}
+          />
+        </Stack>
+
+        <NextActionsModal
+          open={Boolean(activeSuggestions)}
+          actions={activeSuggestions?.actions ?? []}
+          loading={loading}
+          onActionClick={(action) => {
+            if (!activeSuggestions) return;
+            void handleSuggestedActionClick(activeSuggestions.messageId, action);
+          }}
+          onNotResolved={() => {
+            if (!activeSuggestions) return;
+            void handleNotResolved(activeSuggestions.messageId, activeSuggestions.content);
+          }}
+          onClose={() => {
+            setActiveSuggestions(null);
           }}
         />
-
-        <DetailPopover
-          open={open}
-          anchorPosition={anchorPosition}
-          onClose={handleClosePopover}
-          onMoreDetails={handleMoreDetails}
-          disabled={loading}
-        />
-      </Stack>
-
-      <NextActionsModal
-        open={Boolean(activeSuggestions)}
-        actions={activeSuggestions?.actions ?? []}
-        loading={loading}
-        onActionClick={(action) => {
-          if (!activeSuggestions) return;
-          void handleSuggestedActionClick(activeSuggestions.messageId, action);
-        }}
-        onNotResolved={() => {
-          if (!activeSuggestions) return;
-          void handleNotResolved(activeSuggestions.messageId, activeSuggestions.content);
-        }}
-        onClose={() => {
-          setActiveSuggestions(null);
-        }}
-      />
-
+      </Box>
       <ChatInputForm
         value={value.text}
         onChange={onChange}
@@ -236,6 +224,7 @@ export default function ChatBox() {
         // 入力欄クリックも背景扱いにならないようにする
         // ラッパーの Box で onClick stopPropagation 済みのためここは不要
       />
-    </Box>
+
+    </>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, {useEffect, useState} from "react";
 import { Box, Grid, Stack, useMediaQuery, useTheme } from "@mui/material";
 import TextField from "@mui/material/TextField";
 import IconButton from "@mui/material/IconButton";
@@ -26,17 +26,17 @@ interface ChatInputFormProps {
 }
 
 export default function ChatInputForm({
-  value,
-  onChange,
-  onSubmit,
-  disabled = false,
-  quality,
-  tone,
-  setQuality,
-  setTone,
-  sendMethod,
-  setSendMethod,
-}: ChatInputFormProps) {
+                                        value,
+                                        onChange,
+                                        onSubmit,
+                                        disabled = false,
+                                        quality,
+                                        tone,
+                                        setQuality,
+                                        setTone,
+                                        sendMethod,
+                                        setSendMethod,
+                                      }: ChatInputFormProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { state, openModal, closeModal } = useSettingsModal();
@@ -73,86 +73,148 @@ export default function ChatInputForm({
     }
   };
 
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // useEffect(() => {
+  //   // visualViewport APIが使えない環境へのガード
+  //   if (!window.visualViewport) return;
+  //
+  //   const handleResize = () => {
+  //     const visualViewport = window.visualViewport;
+  //     if (!visualViewport) return;
+  //
+  //     // 【修正】高さの差分だけでなく、スクロールによるオフセット(offsetTop)も考慮する
+  //     // これにより、キーボード表示中かつスクロールが発生している状態でも
+  //     // 入力欄を視覚的な最下部に追従させることができます。
+  //     // 計算式: レイアウト全体の高さ - (見えている高さ + 上からのズレ) = 下の隠れている部分の高さ
+  //
+  //     const offset = window.innerHeight - visualViewport.height + window.scrollY;
+  //
+  //     // 負の値になる場合（バウンススクロール等）は0にする
+  //     setKeyboardHeight(offset);
+  //   };
+  //
+  //   window.visualViewport.addEventListener('resize', handleResize);
+  //   window.visualViewport.addEventListener('scroll', handleResize);
+  //
+  //   return () => {
+  //     window.visualViewport?.removeEventListener('resize', handleResize);
+  //     window.visualViewport?.removeEventListener('scroll', handleResize);
+  //   };
+  // }, []);
+
+  useEffect(() => {
+      const handleResize = () => {
+        const visualViewport = window.visualViewport;
+        if (!visualViewport) return;
+
+
+        const offset = - visualViewport.offsetTop + window.innerHeight - visualViewport.height;
+
+        // 負の値になる場合（バウンススクロール等）は0にする
+        setKeyboardHeight(offset);
+      };
+    window.visualViewport?.addEventListener('resize', handleResize);
+    window.visualViewport?.addEventListener('scroll', handleResize);
+
+
+    return () => {
+      window.visualViewport?.removeEventListener('resize', handleResize);
+      window.visualViewport?.removeEventListener('scroll', handleResize);
+    };
+  }, []);
+
+
   return (
     <Box
       sx={{
-        position: "sticky",
-        bottom: 0,
+        position: 'fixed',
+        top: 0,
         left: 0,
         right: 0,
-        backgroundColor: "background.default",
-        p: { xs: 1, sm: 3},
-        pb: { xs: "calc(env(safe-area-inset-bottom) + 8px)", sm: 3 }, // セーフエリア対応
+        bottom: keyboardHeight,
         zIndex: 1000,
-        width: "100%",
+        backgroundColor: 'transparent',
+        pointerEvents: 'none',
       }}
     >
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          void onSubmit();
+      <Box
+        sx={{
+          position: 'absolute',
+          bottom: 0,
+          width: '100%',
+          transition: 'transform 0.10s ease-out',
+          backgroundColor: "background.default",
+          pointerEvents: 'auto',
+          overscrollBehavior: 'contain',
+          pb: keyboardHeight > 0 ? 0 : 'env(safe-area-inset-bottom)', // iPhone X系の下部バー対策
         }}
       >
-        <Stack spacing={1} sx={{ maxWidth: "800px", mx: "auto" }}>
-          <Grid container  spacing={{ xs: 0, md: 2 }} alignItems="center">
-            <Grid size={{ xs: 1 }}>
-              <IconButton
-                color="default"
-                aria-label="設定"
-                size="large"
-                onClick={openModal}
-                sx={{ fontSize: { xs: '1.7rem', md: '2rem'} }}
-              >
-                <TuneIcon />
-              </IconButton>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void onSubmit();
+          }}
+        >
+          <Stack spacing={1} sx={{ maxWidth: "800px", mx: "auto", p: 1 }}>
+            <Grid container spacing={{ xs: 1, md: 2 }} alignItems="flex-end">
+              <Grid size="auto">
+                <IconButton
+                  color="default"
+                  aria-label="設定"
+                  size="large"
+                  onClick={openModal}
+                  sx={{ mb: 0.5 }} // アイコンの位置微調整
+                >
+                  <TuneIcon />
+                </IconButton>
+              </Grid>
+              <Grid size="grow">
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={1}
+                  maxRows={5} // あまり広がりすぎると邪魔なので5行くらい推奨
+                  variant="outlined"
+                  placeholder="メッセージを入力"
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 3,
+                      backgroundColor: "background.paper",
+                    },
+                  }}
+                />
+              </Grid>
+              <Grid size="auto" sx={{ display: 'flex', alignItems: 'flex-end', pb: 0.5 }}>
+                <IconButton
+                  type="submit"
+                  color="primary"
+                  disabled={disabled || !value.trim()} // 空文字送信防止も入れておきました
+                >
+                  {disabled ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : (
+                    <SendIcon />
+                  )}
+                </IconButton>
+              </Grid>
             </Grid>
-            <Grid size={{ xs: 10}}>
-              <TextField
-                fullWidth
-                multiline
-                minRows={1}
-                maxRows={10}
-                variant="outlined"
-                color="primary"
-                placeholder="メッセージを入力"
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                onKeyDown={handleKeyDown}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 5,
-                    backgroundColor: "background.paper",
-                  },
-                }}
-              />
-            </Grid>
-            <Grid sx={{p: 0}} size={{ xs: 1 }}>
-              <IconButton
-                type="submit"
-                color="primary"
-                sx={{ fontSize: { xs: '1.7rem', md: '2rem'} }}
-                disabled={disabled}
-              >
-                {disabled ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  <SendIcon fontSize="inherit"/>
-                )}
-              </IconButton>
-            </Grid>
-          </Grid>
-        </Stack>
-      </form>
-      <SettingsModal
-        open={state.open}
-        onClose={closeModal}
-        quality={quality}
-        tone={tone}
-        setQuality={setQuality}
-        setTone={setTone}
-        sendMethod={sendMethod}
-        setSendMethod={setSendMethod}
-      />
+          </Stack>
+        </form>
+        <SettingsModal
+          open={state.open}
+          onClose={closeModal}
+          quality={quality}
+          tone={tone}
+          setQuality={setQuality}
+          setTone={setTone}
+          sendMethod={sendMethod}
+          setSendMethod={setSendMethod}
+        />
+      </Box>
     </Box>
   );
 }

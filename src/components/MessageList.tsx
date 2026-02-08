@@ -19,12 +19,11 @@ interface MessageListProps {
   hoveredChildId: string;
   onHoverChild: (childId: string) => void;
   onActionClick: (messageId: string, action: string) => void;
-  onShowSuggestions?: (messageId: string, content: string, actions: string[]) => void;
   historyTargetMessageId?: string | null;
   onHistoryTargetChange?: (messageId: string | null) => void;
 }
 
-export default function MessageList({ messages, onTextSelect, onNotResolved, disabled = false, highlights, hoveredChildId, onHoverChild, onActionClick, onShowSuggestions, historyTargetMessageId, onHistoryTargetChange }: MessageListProps) {
+export default function MessageList({ messages, onTextSelect, onNotResolved, disabled = false, highlights, hoveredChildId, onHoverChild, onActionClick, historyTargetMessageId, onHistoryTargetChange }: MessageListProps) {
   const assistantMessages = messages.filter(msg => msg.role === "assistant");
   // State to track which messages are collapsed
   const [collapsedMessageIds, setCollapsedMessageIds] = useState<Set<string>>(new Set());
