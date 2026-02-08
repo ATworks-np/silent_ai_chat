@@ -10,3 +10,20 @@ runConfig:
 env:
   - variable: NEXT_PUBLIC_GEMINI_API_KEY
     secret: "NEXT_PUBLIC_GEMINI_API_KEY"
+  - variable: NEXT_PUBLIC_FIREBASE_APIKEY
+    secret: "NEXT_PUBLIC_FIREBASE_APIKEY"
+  - variable: NEXT_PUBLIC_FIREBASE_DOMAIN
+    value: "silent-ai-chat.firebaseapp.com"
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "silent-ai-chat"
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "silent-ai-chat.firebasestorage.app"
+  - variable: NEXT_PUBLIC_FIREBASE_SENDER_ID
+    value: "232584202369"
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:232584202369:web:7ef9579f285e3e3cf62580"
+  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    value: "G-5P4HNB4VWZ"
+
+
+

@@ -1,12 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import Stack from "@mui/material/Stack";
 import { GeminiMessage } from "../hooks/useGemini";
 import MessageItem from "./MessageItem";
 import type { HighlightedSelection, UserMessage } from "@/types/messages";
-import { Box } from "@mui/material";
+import { Box, Collapse } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
 import DoDisturbOnOutlinedIcon from '@mui/icons-material/DoDisturbOnOutlined';
+import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
 
 interface MessageListProps {
   messages: GeminiMessage[];
@@ -24,6 +26,21 @@ interface MessageListProps {
 
 export default function MessageList({ messages, onTextSelect, onNotResolved, disabled = false, highlights, hoveredChildId, onHoverChild, onActionClick, onShowSuggestions, historyTargetMessageId, onHistoryTargetChange }: MessageListProps) {
   const assistantMessages = messages.filter(msg => msg.role === "assistant");
+  // State to track which messages are collapsed
+  const [collapsedMessageIds, setCollapsedMessageIds] = useState<Set<string>>(new Set());
+
+  // Function to toggle collapsed state of a message
+  const toggleCollapsed = (messageId: string) => {
+    setCollapsedMessageIds(prevState => {
+      const newState = new Set(prevState);
+      if (newState.has(messageId)) {
+        newState.delete(messageId);
+      } else {
+        newState.add(messageId);
+      }
+      return newState;
+    });
+  };
 
   if (assistantMessages.length === 0) {
     return null;
@@ -116,8 +133,15 @@ export default function MessageList({ messages, onTextSelect, onNotResolved, dis
           <Box sx={{ pb: 2 }}>
             <Stack direction='row' sx={{pl: 2}}>
               <Stack alignItems='flex-end' direction='column' >
-                <IconButton sx={{ p: 0, fontSize: { xs: '1rem', md: '1rem'} }}>
-                  <DoDisturbOnOutlinedIcon color='secondary' fontSize="inherit"/>
+                <IconButton 
+                  sx={{ p: 0, fontSize: { xs: '1rem', md: '1rem'} }}
+                  onClick={() => toggleCollapsed(msg.id)}
+                >
+                  {collapsedMessageIds.has(msg.id) ? (
+                    <AddCircleOutlineOutlinedIcon color='secondary' fontSize="inherit"/>
+                  ) : (
+                    <DoDisturbOnOutlinedIcon color='secondary' fontSize="inherit"/>
+                  )}
                 </IconButton>
                 <Box
                   sx={{
@@ -132,9 +156,11 @@ export default function MessageList({ messages, onTextSelect, onNotResolved, dis
                 />
               </Stack>
 
-              <Stack>
-                {children.map(child => renderMessageTree(child, depth + 1))}
-              </Stack>
+              <Collapse in={!collapsedMessageIds.has(msg.id)} timeout={300}>
+                <Stack>
+                  {children.map(child => renderMessageTree(child, depth + 1))}
+                </Stack>
+              </Collapse>
 
             </Stack>
           </Box>
