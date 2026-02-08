@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Box, Grid, Stack, useMediaQuery, useTheme } from "@mui/material";
 import TextField from "@mui/material/TextField";
 import IconButton from "@mui/material/IconButton";
@@ -41,45 +41,12 @@ export default function ChatInputForm({
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { state, openModal, closeModal } = useSettingsModal();
 
-  // キーボードの表示状態を追跡するための状態
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-
   // モバイルデバイスでは常にCtrl+Enterモードを強制（実質Enterキー無効化）
   React.useEffect(() => {
     if (isMobile && sendMethod === "enter") {
       setSendMethod("ctrlEnter");
     }
   }, [isMobile, sendMethod, setSendMethod]);
-
-  // visualViewportのリサイズを監視してキーボードの高さを検出
-  useEffect(() => {
-    if (!isMobile || typeof window === 'undefined' || !window.visualViewport) return;
-
-    const handleResize = () => {
-      // ビューポートの高さが変わったらキーボードが表示されたと判断
-      if (window.visualViewport) {
-        const viewportHeight = window.visualViewport.height;
-        const windowHeight = window.innerHeight;
-
-        // キーボードの高さを計算（ウィンドウの高さ - ビューポートの高さ）
-        const calculatedKeyboardHeight = windowHeight - viewportHeight;
-        setKeyboardHeight(calculatedKeyboardHeight > 0 ? calculatedKeyboardHeight : 0);
-      }
-    };
-
-    window.visualViewport.addEventListener('resize', handleResize);
-    window.visualViewport.addEventListener('scroll', handleResize);
-
-    // 初期状態を設定
-    handleResize();
-
-    return () => {
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', handleResize);
-        window.visualViewport.removeEventListener('scroll', handleResize);
-      }
-    };
-  }, [isMobile]);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (disabled) return;
@@ -107,16 +74,19 @@ export default function ChatInputForm({
   };
 
   return (
-    <Box sx={{ 
-      position: "fixed", 
-      bottom: isMobile ? `${keyboardHeight}px` : 0, // キーボードの高さに応じて位置を調整
-      left: 0, 
-      right: 0, 
-      backgroundColor: "background.default",
-      p: { xs: 1, sm: 3},
-      zIndex: 1000,
-      transition: "bottom 0.1s", // スムーズな移動のためのトランジション
-    }}>
+    <Box
+      sx={{
+        position: "sticky",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: "background.default",
+        p: { xs: 1, sm: 3},
+        pb: { xs: "calc(env(safe-area-inset-bottom) + 8px)", sm: 3 }, // セーフエリア対応
+        zIndex: 1000,
+        width: "100%",
+      }}
+    >
       <form
         onSubmit={(e) => {
           e.preventDefault();
