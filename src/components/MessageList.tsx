@@ -142,6 +142,7 @@ export default function MessageList({ messages, onTextSelect, onNotResolved, dis
         key={msg.id} 
         ref={msg.id === latestMessageId ? latestMessageRef : undefined}
         sx={{
+          ml: 0,
           mb: 2,
           overflow: 'hidden'
         }}
@@ -164,10 +165,9 @@ export default function MessageList({ messages, onTextSelect, onNotResolved, dis
           onToggleHistoryTarget={onHistoryTargetChange ? () => onHistoryTargetChange(isHistoryTarget ? null : msg.id) : undefined}
         />
 
-
         {children.length > 0 && (
           <Box sx={{ pb: 2 }}>
-            <Stack direction='row' sx={{pl: 2}}>
+            <Stack direction='row' sx={{pl: {xs: 0, sm: 3}}}>
               <Stack alignItems='flex-end' direction='column' >
                 <IconButton 
                   sx={{ p: 0, fontSize: { xs: '1rem', md: '1rem'} }}

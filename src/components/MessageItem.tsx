@@ -111,11 +111,11 @@ export default function MessageItem({
 
   return (
     <Box>
-      <Stack direction='row' spacing={2}>
+      <Stack direction='row' spacing={{ xs: 0.5, sm: 2 }}>
         <Box
           sx={{
             height: '50px',
-            width: '20px',
+            width: {xs: '10px', sm: "20px"},
             borderBottom: 2,
             borderBottomColor: 'divider',
             cursor: 'pointer',
@@ -136,7 +136,7 @@ export default function MessageItem({
                 : "",
           }}
         >
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5}}>
             {userMessages.length > 0 && (
               <Accordion
                 disableGutters

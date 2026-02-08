@@ -14,6 +14,7 @@ import DetailPopover from "./DetailPopover";
 import NextActionsModal from "./NextActionsModal";
 import type { HighlightedSelection } from "@/types/messages";
 import {Grid} from "@mui/material";
+import Image from 'next/image';
 
 export default function ChatBox() {
   const { value, onChange, reset } = useChatInput();
@@ -151,13 +152,16 @@ export default function ChatBox() {
         }}
       >
         <Grid container spacing={0} sx={{width: '100%'}}>
-          <Grid size={{xs: 12, sm:6}} >
-            <Typography sx={{ textAlign: { xs: 'left', sm: 'right' } }}　variant="h5" component="h1" color="text.primary" fontWeight="bold">
+          <Grid size={{xs: 12, sm:12}} sx={{ textAlign: { xs: 'center' } }}>
+            <Image src="/icon.png" alt="icon" height={100} width={100} />
+          </Grid>
+          <Grid size={{xs: 12, sm:6}} sx={{ textAlign: { xs: 'center', sm: 'right' } }}>
+            <Typography 　variant="caption" component="h1" color="text.primary" >
               しゃべらない
             </Typography>
           </Grid>
-          <Grid size={{xs: 12, sm:6}}>
-            <Typography variant="h5" component="h1" color="text.primary" fontWeight="bold">
+          <Grid size={{xs: 12, sm:6}} sx={{ textAlign: { xs: 'center', sm: 'left'} }}>
+            <Typography variant="caption" component="h1" color="text.primary" >
               AIチャット
             </Typography>
           </Grid>
