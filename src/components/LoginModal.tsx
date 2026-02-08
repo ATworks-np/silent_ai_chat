@@ -8,7 +8,7 @@ import { db } from "@/libs/firebase";
 import RoundedButton from "@/components/RoundedButton";
 import {useAtom} from "jotai/index";
 import {userAtom} from "@/stores/user";
-import User from "@/models/entities/user";
+import {User} from "@/models/entities/user";
 
 interface LoginModalProps {
   open: boolean;
