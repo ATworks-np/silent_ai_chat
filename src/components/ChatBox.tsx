@@ -138,7 +138,7 @@ export default function ChatBox() {
         alignItems="center"
         spacing={2}
         sx={{
-          minHeight: "100vh",
+          minHeight: "100dvh",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
