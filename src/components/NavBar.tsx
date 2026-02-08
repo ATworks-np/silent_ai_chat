@@ -1,9 +1,10 @@
 "use client";
 
-import { AppBar, Toolbar, Button, Box, Avatar, Stack, Typography } from "@mui/material";
+import { AppBar, Toolbar, Button, Box } from "@mui/material";
 import { useState } from "react";
 import { LoginModal } from "./LoginModal";
 import useUser from "@/hooks/useUser";
+import { NavBarMenu } from "./NavBarMenu";
 
 export function NavBar() {
   const [loginModalOpen, setLoginModalOpen] = useState(false);
@@ -23,16 +24,10 @@ export function NavBar() {
         <Toolbar>
           <Box sx={{ flexGrow: 1 }} />
           {user.props.isAuthenticated ? (
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Typography color="inherit">
-                {user.props.displayName}
-              </Typography>
-              <Avatar 
-                src={user.props.photoURL || undefined} 
-                alt={user.props.displayName || "User"}
-                sx={{ width: 32, height: 32 }}
-              />
-            </Stack>
+            <NavBarMenu
+              displayName={user.props.displayName}
+              photoURL={user.props.photoURL}
+            />
           ) : (
             <Button color="inherit" onClick={handleOpenLoginModal}>
               ログイン
