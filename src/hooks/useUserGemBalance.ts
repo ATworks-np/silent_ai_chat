@@ -46,7 +46,11 @@ interface UseUserGemBalanceState extends GemUsageSummary {
   error: string | null;
 }
 
-export function useUserGemBalance(): UseUserGemBalanceState {
+export interface UseUserGemBalanceReturn extends UseUserGemBalanceState {
+  refresh: () => void;
+}
+
+export function useUserGemBalance(): UseUserGemBalanceReturn {
   const { user } = useUser();
   const [state, setState] = useState<UseUserGemBalanceState>({
     maxGem: null,
@@ -55,6 +59,8 @@ export function useUserGemBalance(): UseUserGemBalanceState {
     loading: false,
     error: null,
   });
+
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const uid = user.props.uid;
@@ -224,7 +230,14 @@ export function useUserGemBalance(): UseUserGemBalanceState {
     return () => {
       cancelled = true;
     };
-  }, [user.props.uid]);
+  }, [user.props.uid, reloadKey]);
 
-  return state;
+  const refresh = () => {
+    setReloadKey((prev) => prev + 1);
+  };
+
+  return {
+    ...state,
+    refresh,
+  };
 }

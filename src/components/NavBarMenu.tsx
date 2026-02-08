@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, Box, IconButton, LinearProgress, Menu, Stack, Typography } from "@mui/material";
+import { Avatar, Box, IconButton, LinearProgress, Menu, Skeleton, Stack, Typography } from "@mui/material";
 import { useNavBarMenu } from "@/hooks/useNavBarMenu";
 import { useUserGemBalance } from "@/hooks/useUserGemBalance";
 import DiamondIcon from '@mui/icons-material/Diamond';
@@ -12,7 +12,7 @@ interface NavBarMenuProps {
 
 export function NavBarMenu({ displayName, photoURL }: NavBarMenuProps) {
   const { anchorEl, open, handleOpen, handleClose } = useNavBarMenu();
-  const { maxGem, usedGem, remainingGem, loading, error } = useUserGemBalance();
+  const { maxGem, usedGem, remainingGem, loading, error, refresh } = useUserGemBalance();
 
   return (
     <>
@@ -22,7 +22,10 @@ export function NavBarMenu({ displayName, photoURL }: NavBarMenuProps) {
         </Typography>
         <IconButton
           color="inherit"
-          onClick={handleOpen}
+          onClick={(event) => {
+            refresh();
+            handleOpen(event);
+          }}
           size="small"
           aria-controls={open ? "navbar-user-menu" : undefined}
           aria-haspopup="true"
@@ -55,16 +58,29 @@ export function NavBarMenu({ displayName, photoURL }: NavBarMenuProps) {
       >
         <Box sx={{ p: 2 }}>
           <Stack spacing={1.5}>
-            <Stack direction="row" alignItems="center"sx={{ mb: 1 }}>
-              <Typography variant="subtitle2" color="text.secondary">
-                今月の残り {Number(remainingGem).toFixed(2)} / {Number(maxGem).toFixed(2)}
-              </Typography>
-              <DiamondIcon fontSize='small'/>
+            <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
+              {loading ? (
+                <>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mr: 1 }}>
+                    今月の残り
+                  </Typography>
+                  <Skeleton variant="rectangular" width={18} height={16} />
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ ml: 1 }}>
+                    / {Number(maxGem).toFixed(2)}
+                  </Typography>
+                  <DiamondIcon fontSize="small" />
+                </>
+              ) : (
+                <>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    今月の残り {Number(remainingGem).toFixed(2)} / {Number(maxGem).toFixed(2)}
+                  </Typography>
+                  <DiamondIcon fontSize="small" />
+                </>
+              )}
             </Stack>
             {loading ? (
-              <Typography variant="body2" color="text.secondary">
-                計算中...
-              </Typography>
+              <LinearProgress variant="indeterminate" />
             ) : error ? (
               <Typography variant="body2" color="error">
                 {error}
