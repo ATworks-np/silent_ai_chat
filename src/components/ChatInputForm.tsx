@@ -1,6 +1,7 @@
 "use client";
 
-import { Box, Grid, Stack } from "@mui/material";
+import React from "react";
+import { Box, Grid, Stack, useMediaQuery, useTheme } from "@mui/material";
 import TextField from "@mui/material/TextField";
 import IconButton from "@mui/material/IconButton";
 import SendIcon from "@mui/icons-material/Send";
@@ -36,7 +37,16 @@ export default function ChatInputForm({
   sendMethod,
   setSendMethod,
 }: ChatInputFormProps) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { state, openModal, closeModal } = useSettingsModal();
+
+  // モバイルデバイスでは常にCtrl+Enterモードを強制（実質Enterキー無効化）
+  React.useEffect(() => {
+    if (isMobile && sendMethod === "enter") {
+      setSendMethod("ctrlEnter");
+    }
+  }, [isMobile, sendMethod, setSendMethod]);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (disabled) return;
@@ -45,6 +55,9 @@ export default function ChatInputForm({
 
     // IME変換中は送信しない
     if (event.nativeEvent.isComposing) return;
+
+    // モバイルデバイスではEnterキーでの送信を無効化
+    if (isMobile) return;
 
     if (sendMethod === "enter") {
       // Shift+Enter は改行として扱い、Enter単体で送信

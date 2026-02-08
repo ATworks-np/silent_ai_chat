@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Slider, Stack, Typography, RadioGroup, FormControlLabel, Radio } from "@mui/material";
+import { Box, Slider, Stack, Typography, RadioGroup, FormControlLabel, Radio, useMediaQuery, useTheme } from "@mui/material";
 import { BaseModal } from "./BaseModal";
 import type { AnswerQuality, AnswerTone, ChatSendMethod } from "@/hooks/useChatSettings";
 
@@ -32,6 +32,8 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ open, onClose, quality, tone, setQuality, setTone, sendMethod, setSendMethod }: SettingsModalProps) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const sliderValue = QUALITY_ORDER.indexOf(quality);
   const toneSliderValue = TONE_ORDER.indexOf(tone);
 
@@ -103,39 +105,41 @@ export function SettingsModal({ open, onClose, quality, tone, setQuality, setTon
             />
           </Box>
         </Box>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-            送信方法
-          </Typography>
-          <RadioGroup
-            row
-            name="chat-send-method"
-            value={sendMethod}
-            onChange={handleSendMethodChange}
-            aria-label="chat send method"
-          >
-            <FormControlLabel
-              value="enter"
-              control={<Radio color="primary" />}
-              sx={{
-                "& .MuiFormControlLabel-label": {
-                  color: sendMethod === "enter" ? "text.primary" : "text.secondary",
-                },
-              }}
-              label="Enter で送信"
-            />
-            <FormControlLabel
-              value="ctrlEnter"
-              control={<Radio color="primary" />}
-              sx={{
-                "& .MuiFormControlLabel-label": {
-                  color: sendMethod === "ctrlEnter" ? "text.primary" : "text.secondary",
-                },
-              }}
-              label="Ctrl + Enter で送信"
-            />
-          </RadioGroup>
-        </Box>
+        {!isMobile && (
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              送信方法
+            </Typography>
+            <RadioGroup
+              row
+              name="chat-send-method"
+              value={sendMethod}
+              onChange={handleSendMethodChange}
+              aria-label="chat send method"
+            >
+              <FormControlLabel
+                value="enter"
+                control={<Radio color="primary" />}
+                sx={{
+                  "& .MuiFormControlLabel-label": {
+                    color: sendMethod === "enter" ? "text.primary" : "text.secondary",
+                  },
+                }}
+                label="Enter で送信"
+              />
+              <FormControlLabel
+                value="ctrlEnter"
+                control={<Radio color="primary" />}
+                sx={{
+                  "& .MuiFormControlLabel-label": {
+                    color: sendMethod === "ctrlEnter" ? "text.primary" : "text.secondary",
+                  },
+                }}
+                label="Ctrl + Enter で送信"
+              />
+            </RadioGroup>
+          </Box>
+        )}
       </Stack>
     </BaseModal>
   );
