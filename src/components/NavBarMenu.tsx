@@ -1,7 +1,9 @@
 "use client";
 
-import { Avatar, IconButton, Menu, Stack, Typography } from "@mui/material";
+import { Avatar, Box, IconButton, LinearProgress, Menu, Stack, Typography } from "@mui/material";
 import { useNavBarMenu } from "@/hooks/useNavBarMenu";
+import { useUserGemBalance } from "@/hooks/useUserGemBalance";
+import DiamondIcon from '@mui/icons-material/Diamond';
 
 interface NavBarMenuProps {
   displayName: string | null;
@@ -10,6 +12,7 @@ interface NavBarMenuProps {
 
 export function NavBarMenu({ displayName, photoURL }: NavBarMenuProps) {
   const { anchorEl, open, handleOpen, handleClose } = useNavBarMenu();
+  const { maxGem, usedGem, remainingGem, loading, error } = useUserGemBalance();
 
   return (
     <>
@@ -45,12 +48,41 @@ export function NavBarMenu({ displayName, photoURL }: NavBarMenuProps) {
           paper: {
             sx: {
               mt: 1.5,
-              width: '200px'
-            }
+              width: "260px",
+            },
           },
         }}
       >
-
+        <Box sx={{ p: 2 }}>
+          <Stack spacing={1.5}>
+            <Stack direction="row" alignItems="center"sx={{ mb: 1 }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                今月の残り {Number(remainingGem).toFixed(2)} / {Number(maxGem).toFixed(2)}
+              </Typography>
+              <DiamondIcon fontSize='small'/>
+            </Stack>
+            {loading ? (
+              <Typography variant="body2" color="text.secondary">
+                計算中...
+              </Typography>
+            ) : error ? (
+              <Typography variant="body2" color="error">
+                {error}
+              </Typography>
+            ) : maxGem === null || usedGem === null || remainingGem === null ? (
+              <Typography variant="body2" color="text.secondary">
+                プラン情報が設定されていません。
+              </Typography>
+            ) : (
+              <>
+                <LinearProgress
+                  variant="determinate"
+                  value={Math.min(100, Math.max(0, ((maxGem-usedGem) / maxGem) * 100))}
+                />
+              </>
+            )}
+          </Stack>
+        </Box>
       </Menu>
     </>
   );
