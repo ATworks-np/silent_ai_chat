@@ -13,10 +13,11 @@ import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github.css";
 import RoundedButton from "./RoundedButton";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { UserMessage, HighlightedSelection } from "@/types/messages";
-import {Divider, Grid, IconButton} from "@mui/material";
+import {Divider, Grid, IconButton, Tooltip} from "@mui/material";
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 interface MessageItemProps {
   messageId: string;
@@ -56,6 +57,8 @@ export default function MessageItem({
    isInHistoryChain = false,
   onToggleHistoryTarget,
 }: MessageItemProps) {
+  const [nextQuestionsExpanded, setNextQuestionsExpanded] = useState(false);
+  const [copySuccess, setCopySuccess] = useState<string | null>(null);
 
   // Create highlighted content with mark tags
   // コードブロック（``` ```）やインラインコード（`code`）の中は置換しない
@@ -272,6 +275,8 @@ export default function MessageItem({
             <Accordion
               disableGutters
               elevation={0}
+              expanded={nextQuestionsExpanded}
+              onChange={(_, isExpanded) => setNextQuestionsExpanded(isExpanded)}
               sx={{
                 mt: 1,
                 backgroundColor: "transparent",
@@ -309,6 +314,7 @@ export default function MessageItem({
                           onClick={() => {
                             if (disabled || !onActionClick) return;
                             onActionClick(action);
+                            setNextQuestionsExpanded(false);
                           }}
                           disabled={disabled}
                         >
@@ -322,7 +328,10 @@ export default function MessageItem({
                     <RoundedButton
                       variant="outlined"
                       color="secondary"
-                      onClick={onNotResolved}
+                      onClick={() => {
+                        onNotResolved();
+                        setNextQuestionsExpanded(false);
+                      }}
                       disabled={disabled}
                     >
                       未解決

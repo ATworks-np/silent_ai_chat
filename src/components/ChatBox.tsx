@@ -11,7 +11,6 @@ import { useChatSettings } from "@/hooks/useChatSettings";
 import ChatInputForm from "./ChatInputForm";
 import MessageList from "./MessageList";
 import DetailPopover from "./DetailPopover";
-import LoadingIndicator from "./LoadingIndicator";
 import NextActionsModal from "./NextActionsModal";
 import type { HighlightedSelection } from "@/types/messages";
 import {Grid} from "@mui/material";
@@ -77,9 +76,9 @@ export default function ChatBox() {
 
   const handleMoreDetails = useCallback(async () => {
     if (!selectedText || !selectedMessageId) return;
-    
+
     handleClosePopover();
-    
+
     // Generate child message ID before sending
     const childMessageId = `assistant-${Date.now()}-${Math.random()}`;
 
@@ -191,9 +190,8 @@ export default function ChatBox() {
           onHistoryTargetChange={(messageId) => {
             setHistoryTargetMessageId(messageId);
           }}
+          loading={loading}
         />
-
-        <LoadingIndicator loading={loading} />
 
         <DetailPopover
           open={open}

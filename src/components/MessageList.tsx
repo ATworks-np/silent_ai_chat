@@ -9,6 +9,7 @@ import { Box, Collapse } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
 import DoDisturbOnOutlinedIcon from '@mui/icons-material/DoDisturbOnOutlined';
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
+import LoadingIndicator from "./LoadingIndicator";
 
 interface MessageListProps {
   messages: GeminiMessage[];
@@ -22,9 +23,10 @@ interface MessageListProps {
   onShowSuggestions?: (messageId: string, content: string, actions: string[]) => void;
   historyTargetMessageId?: string | null;
   onHistoryTargetChange?: (messageId: string | null) => void;
+  loading?: boolean;
 }
 
-export default function MessageList({ messages, onTextSelect, onNotResolved, disabled = false, highlights, hoveredChildId, onHoverChild, onActionClick, onShowSuggestions, historyTargetMessageId, onHistoryTargetChange }: MessageListProps) {
+export default function MessageList({ messages, onTextSelect, onNotResolved, disabled = false, highlights, hoveredChildId, onHoverChild, onActionClick, onShowSuggestions, historyTargetMessageId, onHistoryTargetChange, loading = false }: MessageListProps) {
   const assistantMessages = messages.filter(msg => msg.role === "assistant");
   // State to track which messages are collapsed
   const [collapsedMessageIds, setCollapsedMessageIds] = useState<Set<string>>(new Set());
@@ -74,6 +76,14 @@ export default function MessageList({ messages, onTextSelect, onNotResolved, dis
     return assistantMessages.filter(msg => msg.parentId === parentId);
   };
 
+  // 最後のユーザーメッセージを見つける
+  const lastUserMessage = messages
+    .filter(m => m.role === "user")
+    .pop();
+
+  // 最後のユーザーメッセージの親IDを取得
+  const lastUserParentId = lastUserMessage?.parentId;
+
   // 再帰的にメッセージとその子メッセージをレンダリングする関数
   const renderMessageTree = (msg: GeminiMessage, depth: number) => {
     // Find highlights for this message
@@ -103,6 +113,15 @@ export default function MessageList({ messages, onTextSelect, onNotResolved, dis
     // Get children of this message
     const children = getChildren(msg.id);
 
+    // このメッセージが最後のユーザーメッセージの親IDと一致するか、
+    // または最後のユーザーメッセージの親IDがnullで、このメッセージが最後のアシスタントメッセージの場合、
+    // ローディングインディケータを表示する
+    const isLastAssistantMessage = !lastUserParentId && 
+      msg === assistantMessages[assistantMessages.length - 1];
+    const shouldShowLoadingIndicator = loading && 
+      ((lastUserParentId && msg.id === lastUserParentId) || isLastAssistantMessage) && 
+      children.length === 0;
+
     return (
       <Box 
         key={msg.id} 
@@ -128,6 +147,12 @@ export default function MessageList({ messages, onTextSelect, onNotResolved, dis
           isInHistoryChain={isInHistoryChain}
           onToggleHistoryTarget={onHistoryTargetChange ? () => onHistoryTargetChange(isHistoryTarget ? null : msg.id) : undefined}
         />
+
+        {shouldShowLoadingIndicator && (
+          <Box sx={{ pl: 2 }}>
+            <LoadingIndicator loading={true} autoScroll={true} />
+          </Box>
+        )}
 
         {children.length > 0 && (
           <Box sx={{ pb: 2 }}>
