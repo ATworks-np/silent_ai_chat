@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import {
   collection,
-  doc,
-  getDoc,
   getDocs,
   limit,
   query,
@@ -16,13 +14,9 @@ import { db } from "@/libs/firebase";
 import useUser from "@/hooks/useUser";
 
 interface SubscriptionDoc {
-  actionName: string;
-  createdAt: Timestamp;
-  planId: string;
-}
-
-interface PlanDoc {
-  gem: number;
+  action_name: string;
+  created_at: Timestamp;
+  plan_id: string;
 }
 
 interface ModelCost {
@@ -82,60 +76,9 @@ export function useUserGemBalance(): UseUserGemBalanceReturn {
           return;
         }
 
-        const subscriptionsRef = collection(db, "users", uid, "subscriptions");
-        const subscriptionQuery = query(
-          subscriptionsRef,
-          where("actionName", "==", "created"),
-          orderBy("createdAt", "desc"),
-          limit(1),
-        );
-
-        const subscriptionSnapshot = await getDocs(subscriptionQuery);
-
-        if (cancelled) return;
-
-        if (subscriptionSnapshot.empty) {
-          setState({
-            maxGem: null,
-            usedGem: null,
-            remainingGem: null,
-            loading: false,
-            error: null,
-          });
-          return;
-        }
-
-        const subscriptionData = subscriptionSnapshot.docs[0].data() as SubscriptionDoc;
-
-        if (!subscriptionData.createdAt || !subscriptionData.planId) {
-          setState({
-            maxGem: null,
-            usedGem: null,
-            remainingGem: null,
-            loading: false,
-            error: null,
-          });
-          return;
-        }
-
-        const planRef = doc(db, "plans", subscriptionData.planId);
-        const planSnapshot = await getDoc(planRef);
-
-        if (cancelled) return;
-
-        if (!planSnapshot.exists()) {
-          setState({
-            maxGem: null,
-            usedGem: null,
-            remainingGem: null,
-            loading: false,
-            error: null,
-          });
-          return;
-        }
-
-        const planData = planSnapshot.data() as PlanDoc;
-        const maxGem = planData.gem;
+        // useUser から現在のプランを取得して最大 gem を決定
+        const currentPlan = user.props.plan;
+        const maxGem = currentPlan?.gem ?? null;
 
         if (maxGem === null) {
           setState({
@@ -160,7 +103,7 @@ export function useUserGemBalance(): UseUserGemBalanceReturn {
           modelCostByName.set(modelData.name, modelData.cost);
         });
 
-        const startDate = subscriptionData.createdAt.toDate();
+        const startDate = currentPlan.createdAt.toDate();
         const endDate = new Date(startDate.getTime());
         endDate.setMonth(endDate.getMonth() + 1);
 
