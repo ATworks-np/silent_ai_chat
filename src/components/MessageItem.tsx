@@ -1,6 +1,5 @@
 "use client";
 
-import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
@@ -15,7 +14,7 @@ import "highlight.js/styles/github.css";
 import RoundedButton from "./RoundedButton";
 import { useMemo, useState } from "react";
 import type { UserMessage, HighlightedSelection } from "@/types/messages";
-import {Divider, Grid, IconButton, Tooltip} from "@mui/material";
+import {Grid, IconButton, Tooltip} from "@mui/material";
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
@@ -46,7 +45,6 @@ export default function MessageItem({
   onTextSelect,
   onNotResolved,
   disabled = false,
-  depth = 0,
   children,
   highlights = [],
   isHighlighted = false,
@@ -116,7 +114,7 @@ export default function MessageItem({
       <Stack direction='row' spacing={2}>
         <Box
           sx={{
-            height: '30px',
+            height: '50px',
             width: '20px',
             borderBottom: 2,
             borderBottomColor: 'divider',
@@ -128,6 +126,7 @@ export default function MessageItem({
         />
         <Box
           sx={{
+            flexGrow: 1,
             py: 1,
             color: "text.primary",
             transition: "background-color 0.2s ease",
@@ -266,6 +265,55 @@ export default function MessageItem({
                     </mark>
                   );
                 },
+                pre: ({ node, children, ...props }) => {
+                  const handleCopy = () => {
+                    // Extract text content from code element
+                    const extractText = (obj: any): string => {
+                      console.log(obj)
+                      if (obj.type === "text") {
+                        return obj.value || "";
+                      }
+                      if (obj.children && Array.isArray(obj.children)) {
+                        return obj.children.map(extractText).join("");
+                      }
+                      return "";
+                    };
+
+                    const codeText = extractText(node);
+                    // Copy to clipboard
+                    if (codeText) {
+                      navigator.clipboard.writeText(codeText)
+                        .then(() => {
+                          setCopySuccess("コピーしました");
+                          setTimeout(() => setCopySuccess(null), 2000);
+                        })
+                        .catch(() => {
+                          setCopySuccess("コピーに失敗しました");
+                          setTimeout(() => setCopySuccess(null), 2000);
+                        });
+                    }
+                  };
+
+                  return (
+                    <Box sx={{ position: "relative" }}>
+                      <pre {...props}>{children}</pre>
+                      <Tooltip title={copySuccess || "クリップボードにコピー"} placement="top">
+                        <IconButton
+                          size="small"
+                          onClick={handleCopy}
+                          sx={{
+                            position: "absolute",
+                            top: 0,
+                            right: 0,
+                            backgroundColor: "rgba(255, 255, 255, 0)",
+                          }}
+                        >
+                          <ContentCopyIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  );
+                },
               }}
             >
               {highlightedContent}
@@ -342,14 +390,16 @@ export default function MessageItem({
             </Accordion>
 
             <Box  sx={{ position: "absolute", top: 0, right: 0 }}>
-              <IconButton
-                color={isHistoryTarget ? "secondary" : "default"}
-                size="small"
-                onClick={() => !disabled && onToggleHistoryTarget?.()}
-                disabled={disabled}
-              >
-                <PlaylistAddCheckIcon />
-              </IconButton>
+              <Tooltip title={"チャット履歴に含める"} placement="top">
+                <IconButton
+                  color={isHistoryTarget ? "secondary" : "default"}
+                  size="small"
+                  onClick={() => !disabled && onToggleHistoryTarget?.()}
+                  disabled={disabled}
+                >
+                  <PlaylistAddCheckIcon />
+                </IconButton>
+              </Tooltip>
             </Box>
           </Box>
 

@@ -5,6 +5,7 @@ import TextField from "@mui/material/TextField";
 import IconButton from "@mui/material/IconButton";
 import SendIcon from "@mui/icons-material/Send";
 import TuneIcon from "@mui/icons-material/Tune";
+import CircularProgress from "@mui/material/CircularProgress";
 import { useSettingsModal } from "@/hooks/useSettingsModal";
 import { SettingsModal } from "@/components/SettingsModal";
 import type { AnswerQuality, AnswerTone, ChatSendMethod } from "@/hooks/useChatSettings";
@@ -115,7 +116,11 @@ export default function ChatInputForm({
                 sx={{ fontSize: { xs: '1.7rem', md: '2rem'} }}
                 disabled={disabled}
               >
-                <SendIcon fontSize="inherit"/>
+                {disabled ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  <SendIcon fontSize="inherit"/>
+                )}
               </IconButton>
             </Grid>
           </Grid>

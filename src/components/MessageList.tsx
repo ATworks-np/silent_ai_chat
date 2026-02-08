@@ -1,15 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Stack from "@mui/material/Stack";
-import { GeminiMessage } from "../hooks/useGemini";
+import { GeminiMessage } from "@/hooks/useGemini";
 import MessageItem from "./MessageItem";
 import type { HighlightedSelection, UserMessage } from "@/types/messages";
 import { Box, Collapse } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
 import DoDisturbOnOutlinedIcon from '@mui/icons-material/DoDisturbOnOutlined';
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
-import LoadingIndicator from "./LoadingIndicator";
 
 interface MessageListProps {
   messages: GeminiMessage[];
@@ -23,13 +22,44 @@ interface MessageListProps {
   onShowSuggestions?: (messageId: string, content: string, actions: string[]) => void;
   historyTargetMessageId?: string | null;
   onHistoryTargetChange?: (messageId: string | null) => void;
-  loading?: boolean;
 }
 
-export default function MessageList({ messages, onTextSelect, onNotResolved, disabled = false, highlights, hoveredChildId, onHoverChild, onActionClick, onShowSuggestions, historyTargetMessageId, onHistoryTargetChange, loading = false }: MessageListProps) {
+export default function MessageList({ messages, onTextSelect, onNotResolved, disabled = false, highlights, hoveredChildId, onHoverChild, onActionClick, onShowSuggestions, historyTargetMessageId, onHistoryTargetChange }: MessageListProps) {
   const assistantMessages = messages.filter(msg => msg.role === "assistant");
   // State to track which messages are collapsed
   const [collapsedMessageIds, setCollapsedMessageIds] = useState<Set<string>>(new Set());
+  // Ref to track the latest message
+  const latestMessageRef = useRef<HTMLDivElement>(null);
+  // Ref to track the previous messages length
+  const prevMessagesLengthRef = useRef<number>(0);
+
+  // Compute the latest message ID
+  const latestMessageId = assistantMessages.length > 0 
+    ? assistantMessages[assistantMessages.length - 1].id 
+    : null;
+
+  // Effect to scroll to the latest message when a new message is added
+  useEffect(() => {
+    // Only scroll if the number of messages has increased
+    if (assistantMessages.length > prevMessagesLengthRef.current) {
+      prevMessagesLengthRef.current = assistantMessages.length;
+
+      // Wait for the DOM to update
+      setTimeout(() => {
+        if (latestMessageRef.current) {
+          // Scroll the message to the center of the viewport
+          const elementRect = latestMessageRef.current.getBoundingClientRect();
+          const absoluteElementTop = elementRect.top + window.pageYOffset;
+          const middle = absoluteElementTop - (window.innerHeight / 2) + (elementRect.height / 2);
+
+          window.scrollTo({
+            top: middle,
+            behavior: 'smooth'
+          });
+        }
+      }, 100);
+    }
+  }, [assistantMessages.length]);
 
   // Function to toggle collapsed state of a message
   const toggleCollapsed = (messageId: string) => {
@@ -76,13 +106,6 @@ export default function MessageList({ messages, onTextSelect, onNotResolved, dis
     return assistantMessages.filter(msg => msg.parentId === parentId);
   };
 
-  // 最後のユーザーメッセージを見つける
-  const lastUserMessage = messages
-    .filter(m => m.role === "user")
-    .pop();
-
-  // 最後のユーザーメッセージの親IDを取得
-  const lastUserParentId = lastUserMessage?.parentId;
 
   // 再帰的にメッセージとその子メッセージをレンダリングする関数
   const renderMessageTree = (msg: GeminiMessage, depth: number) => {
@@ -113,18 +136,11 @@ export default function MessageList({ messages, onTextSelect, onNotResolved, dis
     // Get children of this message
     const children = getChildren(msg.id);
 
-    // このメッセージが最後のユーザーメッセージの親IDと一致するか、
-    // または最後のユーザーメッセージの親IDがnullで、このメッセージが最後のアシスタントメッセージの場合、
-    // ローディングインディケータを表示する
-    const isLastAssistantMessage = !lastUserParentId && 
-      msg === assistantMessages[assistantMessages.length - 1];
-    const shouldShowLoadingIndicator = loading && 
-      ((lastUserParentId && msg.id === lastUserParentId) || isLastAssistantMessage) && 
-      children.length === 0;
 
     return (
       <Box 
         key={msg.id} 
+        ref={msg.id === latestMessageId ? latestMessageRef : undefined}
         sx={{
           mb: 2,
           overflow: 'hidden'
@@ -148,11 +164,6 @@ export default function MessageList({ messages, onTextSelect, onNotResolved, dis
           onToggleHistoryTarget={onHistoryTargetChange ? () => onHistoryTargetChange(isHistoryTarget ? null : msg.id) : undefined}
         />
 
-        {shouldShowLoadingIndicator && (
-          <Box sx={{ pl: 2 }}>
-            <LoadingIndicator loading={true} autoScroll={true} />
-          </Box>
-        )}
 
         {children.length > 0 && (
           <Box sx={{ pb: 2 }}>

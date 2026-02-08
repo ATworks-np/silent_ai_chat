@@ -151,12 +151,12 @@ export default function ChatBox() {
         }}
       >
         <Grid container spacing={0} sx={{width: '100%'}}>
-          <Grid size={{xs: 12, md:6}} >
-            <Typography sx={{ textAlign: { xs: 'left', md: 'right' } }}　variant="h5" component="h1" color="text.primary" fontWeight="bold">
+          <Grid size={{xs: 12, sm:6}} >
+            <Typography sx={{ textAlign: { xs: 'left', sm: 'right' } }}　variant="h5" component="h1" color="text.primary" fontWeight="bold">
               しゃべらない
             </Typography>
           </Grid>
-          <Grid size={{xs: 12, md:6}}>
+          <Grid size={{xs: 12, sm:6}}>
             <Typography variant="h5" component="h1" color="text.primary" fontWeight="bold">
               AIチャット
             </Typography>
@@ -190,7 +190,6 @@ export default function ChatBox() {
           onHistoryTargetChange={(messageId) => {
             setHistoryTargetMessageId(messageId);
           }}
-          loading={loading}
         />
 
         <DetailPopover
