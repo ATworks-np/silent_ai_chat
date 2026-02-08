@@ -5,6 +5,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
+import CircularProgress from "@mui/material/CircularProgress";
 import { useChatInput } from "@/hooks/useChatInput";
 import { useGemini } from "@/hooks/useGemini";
 import { useChatSettings } from "@/hooks/useChatSettings";
@@ -19,7 +20,7 @@ import Image from 'next/image';
 export default function ChatBox() {
   const { value, onChange, reset } = useChatInput();
   const { quality, tone, sendMethod, setQuality, setTone, setSendMethod } = useChatSettings();
-  const { messages, loading, error, sendMessage } = useGemini({ quality, tone });
+  const { messages, loading, error, sendMessage, lastTokenUsage, messagesLoading } = useGemini({ quality, tone });
   const [anchorPosition, setAnchorPosition] = useState<{ top: number; left: number } | null>(null);
   const [selectedText, setSelectedText] = useState<string>("");
   const [selectedMessageId, setSelectedMessageId] = useState<string>("");
@@ -169,6 +170,20 @@ export default function ChatBox() {
             <Alert severity="error">{error}</Alert>
           )}
 
+          {messagesLoading && messages.length === 0 && (
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              sx={{ mt: 2 }}
+            >
+              <CircularProgress size={20} />
+              <Typography variant="body2" color="text.secondary">
+                履歴を読み込み中です…
+              </Typography>
+            </Stack>
+          )}
+
           <MessageList
             messages={messages}
             onTextSelect={handleTextSelect}
@@ -183,6 +198,22 @@ export default function ChatBox() {
               setHistoryTargetMessageId(messageId);
             }}
           />
+
+          {lastTokenUsage && (
+            <Box
+              sx={{
+                mt: 1,
+                px: 2,
+                py: 0.5,
+                alignSelf: "stretch",
+                maxWidth: "800px",
+              }}
+            >
+              <Typography variant="caption" color="text.secondary">
+                入力トークン: {lastTokenUsage.promptTokenCount} / 出力トークン: {lastTokenUsage.candidatesTokenCount} / 合計: {lastTokenUsage.totalTokenCount}
+              </Typography>
+            </Box>
+          )}
 
           <DetailPopover
             open={open}

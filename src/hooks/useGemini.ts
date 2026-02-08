@@ -4,6 +4,9 @@ import { useState, useCallback } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useSystemPrompt } from "./useSystemPrompt";
 import type { AnswerQuality, AnswerTone } from "./useChatSettings";
+import { useConversationPersistence } from "./useConversationPersistence";
+import { useMessages } from "./useMessages";
+import useUser from "@/hooks/useUser";
 
 export interface GeminiMessage {
   id: string;
@@ -17,6 +20,13 @@ export interface GeminiMessage {
 export interface UseGeminiOptions {
   quality: AnswerQuality;
   tone: AnswerTone;
+}
+
+export interface GeminiTokenUsage {
+  promptTokenCount: number;
+  candidatesTokenCount: number;
+  thoughtsTokenCount: number;
+  totalTokenCount: number;
 }
 
 function buildQualityInstruction(quality: AnswerQuality): string {
@@ -46,10 +56,13 @@ function buildToneInstruction(tone: AnswerTone): string {
 }
 
 export function useGemini({ quality, tone }: UseGeminiOptions) {
-  const [messages, setMessages] = useState<GeminiMessage[]>([]);
+  const { messages, setMessages, loading: messagesLoading } = useMessages();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastTokenUsage, setLastTokenUsage] = useState<GeminiTokenUsage | null>(null);
   const { content: systemPrompt } = useSystemPrompt();
+  const { user } = useUser();
+  const { ensureAndSaveTurn } = useConversationPersistence({ userId: user.props.uid ?? null });
 
   const sendMessage = useCallback(
     async (userMessage: string, parentId?: string, assistantIdOverride?: string) => {
@@ -146,14 +159,16 @@ export function useGemini({ quality, tone }: UseGeminiOptions) {
         ];
 
         // 2. いまのユーザーメッセージを state に追加
-        const userId = `user-${Date.now()}-${Math.random()}`;
+        const userMessageId = `user-${Date.now()}-${Math.random()}`;
         const newUserMessage: GeminiMessage = {
-          id: userId,
+          id: userMessageId,
           role: "user",
           content: userMessage,
           parentId,
         };
         setMessages((prev) => [...prev, newUserMessage]);
+
+        const assistantId = assistantIdOverride || `assistant-${Date.now()}-${Math.random()}`;
 
         // Initialize Gemini API
         const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
@@ -169,14 +184,19 @@ export function useGemini({ quality, tone }: UseGeminiOptions) {
 
         const finalSystemPrompt = `${basePrompt}\n\n---\n出力スタイル設定:\n${qualityInstruction}\n${toneInstruction}`.trim();
 
+        // 利用するモデル名（履歴にも保存する）
+        const modelName = "gemini-3-flash-preview";
+
         const model = genAI.getGenerativeModel({
-          model: "gemini-3-flash-preview",
+          model: modelName,
           systemInstruction: finalSystemPrompt,
         });
 
         const result = await model.generateContent({ contents });
         const response = await result.response;
         const rawText = response.text();
+
+        console.log(response);
 
         // モデルからの返却テキストを「本文」と「次にするアクション」に分解する
         const delimiter = "次にするアクション:";
@@ -197,8 +217,42 @@ export function useGemini({ quality, tone }: UseGeminiOptions) {
           suggestedActions = actionLines.slice(0, 2);
         }
 
+        // トークン使用量を取得（利用可能な場合のみ）
+        const usage = (response as unknown as {
+          usageMetadata?: {
+            promptTokenCount?: number;
+            candidatesTokenCount?: number;
+            thoughtsTokenCount?: number;
+            totalTokenCount?: number;
+          };
+        }).usageMetadata;
+
+        if (usage) {
+          const usageValue: GeminiTokenUsage = {
+            promptTokenCount: usage.promptTokenCount ?? 0,
+            candidatesTokenCount: usage.candidatesTokenCount ?? 0,
+            thoughtsTokenCount: usage.thoughtsTokenCount ?? 0,
+            totalTokenCount: usage.totalTokenCount ?? 0,
+          };
+
+          setLastTokenUsage(usageValue);
+
+          // Firestore に会話履歴を保存（本文とアクションを分けて保存）
+          await ensureAndSaveTurn({
+            userContent: userMessage,
+            assistantContent: text,
+            tokenUsage: usageValue,
+            userMessageId,
+            assistantMessageId: assistantId,
+            parentMessageId: parentId ?? null,
+            actions: suggestedActions,
+            modelName,
+          });
+        } else {
+          setLastTokenUsage(null);
+        }
+
         // Add assistant message
-        const assistantId = assistantIdOverride || `assistant-${Date.now()}-${Math.random()}`;
         const newAssistantMessage: GeminiMessage = {
           id: assistantId,
           role: "assistant",
@@ -218,7 +272,7 @@ export function useGemini({ quality, tone }: UseGeminiOptions) {
     [systemPrompt, quality, tone, messages],
   );
 
-  return { messages, loading, error, sendMessage };
+  return { messages, loading, error, sendMessage, lastTokenUsage, messagesLoading };
 }
 
 export type UseGeminiReturn = ReturnType<typeof useGemini>;
