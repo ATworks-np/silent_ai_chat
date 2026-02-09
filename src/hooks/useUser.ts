@@ -1,5 +1,5 @@
 import { useAtom } from "jotai";
-import { useEffect } from "react";
+import {useEffect, useState} from "react";
 import { getAuth, signInAnonymously } from "firebase/auth";
 import { userAtom } from "@/stores/user";
 import { User, guestUser } from "@/models/entities/user";
@@ -17,6 +17,7 @@ import {
   where, serverTimestamp, addDoc,
 } from "firebase/firestore";
 import { db } from "@/libs/firebase";
+import {syncUserRecord} from "@/services/createUser";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -69,81 +70,50 @@ const fetchCurrentPlan = async (uid: string): Promise<IPlan | undefined> => {
 
 const useUser = () => {
   const [user, setUser] = useAtom(userAtom);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const auth = getAuth();
 
-    // 1. 匿名ログインと初期データ作成を行う関数
-    const ensureAnonymous = async () => {
-      try {
-        // すでにログインしているか、処理中の場合は何もしない
-        if (!auth.currentUser && !anonymousSignInStarted) {
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      console.log('onAuthStateChange', firebaseUser);
+      // 1. ユーザーが存在しない場合のみ、匿名ログインを試みる
+      if (!firebaseUser) {
+        if (!anonymousSignInStarted) {
           anonymousSignInStarted = true;
-
-          // ログイン実行し、結果（ユーザー情報）を受け取る
-          const userCredential = await signInAnonymously(auth);
-          const firebaseUser = userCredential.user;
-
-          const userDocRef = doc(db, "users", firebaseUser.uid);
-          const docSnapshot = await getDoc(userDocRef);
-
-          if (!docSnapshot.exists()) {
-            await setDoc(userDocRef, {
-              displayName: firebaseUser.displayName ?? null,
-              photoURL: firebaseUser.photoURL ?? null,
-              type: "guest",
-            });
-
-            // 初回ゲスト作成時に subscriptions に created レコードを追加
-            const subscriptionsRef = collection(db, "users", userDocRef.id, "subscriptions");
-            await addDoc(subscriptionsRef, {
-              actionName: "created",
-              createdAt: serverTimestamp(),
-              planId: guestPlan.id,
-            });
+          try {
+            console.log("No user found. Starting anonymous sign-in...");
+            await signInAnonymously(auth);
+            // ここで return しても、ログイン成功時に再度この onAuthStateChanged が呼ばれるから大丈夫！
+          } catch (error) {
+            console.error("Failed to sign in anonymously", error);
+            anonymousSignInStarted = false;
           }
         }
-      } catch (error) {
-        console.error("Failed to sign in anonymously", error);
-      }
-    };
-
-    void ensureAnonymous();
-
-    // 2. 状態監視（ここはデータの同期のみに専念させます）
-    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
-      if (!firebaseUser) {
         return;
       }
 
+      const userData = await syncUserRecord({
+        uid: firebaseUser.uid,
+        displayName: firebaseUser.displayName,
+        photoURL: firebaseUser.photoURL,
+      });
+
       const token = await firebaseUser.getIdToken();
-      const userDocRef = doc(db, "users", firebaseUser.uid);
+      const plan = await fetchCurrentPlan(firebaseUser.uid);
 
-
-      let docSnapshot = await getDoc(userDocRef);
-
-      let retryCount = 0;
-      const maxRetries = 5;
-
-      while (!docSnapshot.exists() && retryCount < maxRetries) {
-        // 500ms 待機
-        await sleep(500);
-        // 再取得
-        docSnapshot = await getDoc(userDocRef);
-        retryCount++;
+      if(!plan){
+        return;
       }
-
-      const userData = docSnapshot.data();
-      const plan = await fetchCurrentPlan(userDocRef.id);
 
       setUser(
         new User({
-          uid: userDocRef.id,
+          uid: firebaseUser.uid,
           token,
           photoURL: userData?.photoURL,
           displayName: userData?.displayName,
           type: userData?.type,
-          plan,
+          plan: plan,
         })
       );
     });
@@ -151,25 +121,7 @@ const useUser = () => {
     return () => unsubscribe();
   }, [setUser]);
 
-  const refreshUserData = async () => {
-    if (!user.props.uid) return;
-    const userDocRef = doc(db, "users", user.props.uid);
-    const docSnapshot = await getDoc(userDocRef);
-    const userData = docSnapshot.data();
-    const plan = await fetchCurrentPlan(userDocRef.id);
-    setUser(
-      new User({
-        uid: user.props.uid,
-        token: user.props.token,
-        photoURL: userData?.photoURL,
-        displayName: userData?.displayName,
-        type: userData?.type,
-        plan,
-      })
-    );
-  };
-
-  return { user, setUser, refreshUserData };
+  return { user, setUser };
 };
 
 export default useUser;

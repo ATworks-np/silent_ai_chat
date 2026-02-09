@@ -2,13 +2,23 @@
 
 import { BaseModal } from "./BaseModal";
 import { Stack } from "@mui/material";
-import { GoogleAuthProvider, getAuth, linkWithPopup } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import {
+  GoogleAuthProvider,
+  getAuth,
+  linkWithPopup,
+  signInWithCredential,
+  AuthError
+} from "firebase/auth";
+import {addDoc, collection, doc, getDoc, serverTimestamp, setDoc} from "firebase/firestore";
 import { db } from "@/libs/firebase";
 import RoundedButton from "@/components/RoundedButton";
-import {useAtom} from "jotai/index";
-import {userAtom} from "@/stores/user";
-import {User} from "@/models/entities/user";
+import { useAtom } from "jotai/index";
+import { userAtom } from "@/stores/user";
+import { User } from "@/models/entities/user";
+import {standardPlan} from "@/models/interfaces/plan";
+import {FirebaseError} from "@firebase/app";
+import {refresh} from "next/cache";
+import useUser from "@/hooks/useUser";
 
 interface LoginModalProps {
   open: boolean;
@@ -16,54 +26,71 @@ interface LoginModalProps {
 }
 
 export function LoginModal({ open, onClose }: LoginModalProps) {
-  const [, setUser] = useAtom(userAtom)
 
   const handleGoogleLogin = async () => {
+    const auth = getAuth();
+    const provider = new GoogleAuthProvider();
+    let firebaseUser = null;
+
     try {
-      const auth = getAuth();
-      const provider = new GoogleAuthProvider();
-      //const result = await signInWithPopup(auth, provider);
+      // 1. まず現在の匿名ユーザーにリンクを試みる
+      if (auth.currentUser) {
+        const result = await linkWithPopup(auth.currentUser, provider);
+        firebaseUser = result.user;
 
-      const currentUser = auth.currentUser;
-      let result = undefined;
-      if (currentUser && currentUser.isAnonymous) {
-        result = await linkWithPopup(currentUser, provider);
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        const docSnapshot = await getDoc(userDocRef);
+
+        if (!docSnapshot.exists()) {
+          await setDoc(userDocRef, {
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            type: 'none',
+          });
+          const subscriptionsRef = collection(db, "users", userDocRef.id, "subscriptions");
+          await addDoc(subscriptionsRef, {
+            actionName: "created",
+            createdAt: serverTimestamp(),
+            planId: standardPlan.id,
+          });
+        }
       }
-
-      if (!result) {
-        throw new Error("エラーが発生しました");
+    } catch (error: unknown) {
+      if (error instanceof FirebaseError) {
+        // 2. 「すでに使われている」エラーの場合、そのアカウントでログインし直す
+        if (error.code === 'auth/credential-already-in-use') {
+          try {
+            // エラーオブジェクトからクレデンシャル（Googleの認証情報）を取り出す
+            const credential = GoogleAuthProvider.credentialFromError(error);
+            if (credential) {
+              // そのクレデンシャルを使ってログイン（切り替え）
+              const result = await signInWithCredential(auth, credential);
+              firebaseUser = result.user;
+              console.log("既存のアカウントに切り替えました");
+            }
+          } catch (signInError) {
+            console.error("Switching account failed:", signInError);
+            return;
+          }
+        } else {
+          // それ以外のエラーはログに出して終了
+          console.error("Link failed:", error);
+          return;
+        }
+      } else {
+        // Handle non-Firebase errors
+        console.error("General Error:", error);
       }
+    }
 
-      const firebaseUser = result.user;
-      const token = await firebaseUser.getIdToken();
+    if (!firebaseUser) {
+      return;
+    }
 
-      // Check if user exists in Firestore
-      const userDocRef = doc(db, 'versions/1/users', firebaseUser.uid);
-      const docSnapshot = await getDoc(userDocRef);
-
-      // If user doesn't exist, create a new document
-      if (!docSnapshot.exists()) {
-        await setDoc(userDocRef, {
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
-          type: 'standard',
-        });
-      }
-
-      // Update user state
-      setUser(
-        new User({
-          uid: firebaseUser.uid,
-          token,
-          photoURL: firebaseUser.photoURL,
-          displayName: firebaseUser.displayName,
-          type: 'standard',
-        })
-      );
-
+    try {
       onClose();
     } catch (error) {
-      console.error("Error signing in with Google:", error);
+      console.error("Error updating user data:", error);
     }
   };
 
@@ -74,8 +101,8 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     >
       <Stack spacing={2} alignItems="center">
         <RoundedButton
-          variant="contained" 
-          color="primary" 
+          variant="contained"
+          color="primary"
           onClick={handleGoogleLogin}
           fullWidth
         >

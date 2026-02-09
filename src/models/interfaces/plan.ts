@@ -13,3 +13,10 @@ export const guestPlan: IPlan = {
   gem: 0.1,
   createdAt: new Timestamp(0, 0)
 };
+
+export const standardPlan: IPlan = {
+  id: "bRr6ScPrnuummF6l2gc9",
+  name: "standard",
+  gem: 2,
+  createdAt: new Timestamp(0, 0)
+};

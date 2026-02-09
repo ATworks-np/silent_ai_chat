@@ -24,6 +24,10 @@ env:
     value: "1:232584202369:web:7ef9579f285e3e3cf62580"
   - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
     value: "G-5P4HNB4VWZ"
+  - variable: FIREBASE_CLIENT_EMAIL
+    secret: "FIREBASE_CLIENT_EMAIL"
+  - variable: FIREBASE_PRIVATE_KEY
+    secret: "FIREBASE_PRIVATE_KEY"
 
 
 

@@ -122,8 +122,6 @@ export function useUserGemBalance(): UseUserGemBalanceReturn {
 
         let usedGem = 0;
 
-        console.log(messagesSnapshot.docs.length)
-
         messagesSnapshot.forEach((docSnapshot) => {
           const data = docSnapshot.data();
           const role = data.role as "user" | "model" | undefined;

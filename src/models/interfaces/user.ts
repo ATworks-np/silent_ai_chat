@@ -4,16 +4,16 @@ export interface IUserConstructor {
   uid: string | undefined;
   token: string;
   displayName: string | null;
-  type: 'guest' | 'standard' | 'pro' | 'unlimited' | undefined;
+  type: 'none' | 'admin';
   photoURL: string | null;
-  plan?: IPlan;
+  plan: IPlan;
 }
 
 export interface IUser {
   uid: string | undefined;
   token: string;
   displayName: string | null;
-  type: 'guest' | 'standard' | 'pro' | 'unlimited' | undefined;
+  type: 'none' | 'admin';
   photoURL: string | null;
   isAuthenticated: boolean;
   isGuest: boolean;

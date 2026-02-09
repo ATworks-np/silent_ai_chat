@@ -12,7 +12,6 @@ class User implements IUserClass {
       isStandard: false,
       isPro: false,
       isUnlimited: false,
-      plan: guestPlan,
     }
     this.props.isAuthenticated = this.isAuthenticated()
   }
@@ -23,7 +22,7 @@ class User implements IUserClass {
       token: 'guest',
       displayName: null,
       photoURL: null,
-      type: 'guest',
+      type: 'none',
       isGuest: false,
       isAuthenticated: false,
       isStandard: false,
@@ -38,7 +37,7 @@ class User implements IUserClass {
   }
 
   isGuest() {
-    return this.props.type === 'guest';
+    return this.props.plan.name == 'guest'
   }
 
   set(updates: Partial<IUser>) {
@@ -51,7 +50,7 @@ const guestUser = new User({
   token: 'guest',
   displayName: null,
   photoURL: null,
-  type: 'guest',
+  type: 'none',
   plan: guestPlan,
 });
 
