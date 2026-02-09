@@ -4,22 +4,12 @@ import { useEffect, useState } from "react";
 import {
   collection,
   getDocs,
-  limit,
   query,
   where,
-  orderBy,
-  type Timestamp,
 } from "firebase/firestore";
 import { db } from "@/libs/firebase";
-import useUser from "@/hooks/useUser";
 import {useAtom} from "jotai";
 import {userAtom} from "@/stores/user";
-
-interface SubscriptionDoc {
-  action_name: string;
-  created_at: Timestamp;
-  plan_id: string;
-}
 
 interface ModelCost {
   user: number;

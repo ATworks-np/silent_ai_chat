@@ -93,6 +93,7 @@ const useUser = () => {
         return;
       }
 
+
       const userData = await syncUserRecord({
         uid: firebaseUser.uid,
         displayName: firebaseUser.displayName,
