@@ -25,19 +25,12 @@ export function NavBar() {
       <AppBar position="fixed" color="primary">
         <Toolbar>
           <Box sx={{ flexGrow: 1 }} />
-          {user.props.plan?.name == 'guest' &&
-            <RoundedButton
-              variant="contained"
-              color="primary"
-              onClick={handleOpenLoginModal}
-            >
-                ログイン
-            </RoundedButton>
-          }
           {user.props.isAuthenticated ? (
             <NavBarMenu
               displayName={user.props.displayName}
               photoURL={user.props.photoURL}
+              isGuest={user.props.plan?.name === "guest"}
+              onOpenLoginModal={handleOpenLoginModal}
             />
           ) : (
             <CircularProgress size={30} color='inherit'/>

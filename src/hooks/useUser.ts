@@ -18,6 +18,8 @@ import {
 } from "firebase/firestore";
 import { db } from "@/libs/firebase";
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 let anonymousSignInStarted = false;
 
 const fetchCurrentPlan = async (uid: string): Promise<IPlan | undefined> => {
@@ -70,55 +72,84 @@ const useUser = () => {
 
   useEffect(() => {
     const auth = getAuth();
-    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
-      if (firebaseUser) {
-        const token = await firebaseUser.getIdToken();
-        const userDocRef = doc(db, "users", firebaseUser.uid);
-        const docSnapshot = await getDoc(userDocRef);
 
-        if (!docSnapshot.exists()) {
-          await setDoc(userDocRef, {
-            displayName: firebaseUser.displayName ?? null,
-            photoURL: firebaseUser.photoURL ?? null,
-            type: "guest",
-          });
+    // 1. 匿名ログインと初期データ作成を行う関数
+    const ensureAnonymous = async () => {
+      try {
+        // すでにログインしているか、処理中の場合は何もしない
+        if (!auth.currentUser && !anonymousSignInStarted) {
+          anonymousSignInStarted = true;
 
-          // 初回ゲスト作成時に subscriptions に created レコードを追加
-          const subscriptionsRef = collection(db, "users", userDocRef.id, "subscriptions");
-          await addDoc(subscriptionsRef, {
-            actionName: "created",
-            createdAt: serverTimestamp(),
-            planId: guestPlan.id,
-          });
-        }
+          // ログイン実行し、結果（ユーザー情報）を受け取る
+          const userCredential = await signInAnonymously(auth);
+          const firebaseUser = userCredential.user;
 
-        const userData = (await getDoc(userDocRef)).data();
-        const plan = await fetchCurrentPlan(userDocRef.id);
-        setUser(
-          new User({
-            uid: userDocRef.id,
-            token,
-            photoURL: userData?.photoURL,
-            displayName: userData?.displayName,
-            type: userData?.type,
-            plan,
-          })
-        );
-      } else {
-        try {
-          if (!anonymousSignInStarted) {
-            anonymousSignInStarted = true;
-            await signInAnonymously(auth);
+          const userDocRef = doc(db, "users", firebaseUser.uid);
+          const docSnapshot = await getDoc(userDocRef);
+
+          if (!docSnapshot.exists()) {
+            await setDoc(userDocRef, {
+              displayName: firebaseUser.displayName ?? null,
+              photoURL: firebaseUser.photoURL ?? null,
+              type: "guest",
+            });
+
+            // 初回ゲスト作成時に subscriptions に created レコードを追加
+            const subscriptionsRef = collection(db, "users", userDocRef.id, "subscriptions");
+            await addDoc(subscriptionsRef, {
+              actionName: "created",
+              createdAt: serverTimestamp(),
+              planId: guestPlan.id,
+            });
           }
-        } catch (error) {
-          console.error("Failed to sign in anonymously", error);
-          setUser(guestUser);
         }
+      } catch (error) {
+        console.error("Failed to sign in anonymously", error);
       }
+    };
+
+    void ensureAnonymous();
+
+    // 2. 状態監視（ここはデータの同期のみに専念させます）
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      if (!firebaseUser) {
+        return;
+      }
+
+      const token = await firebaseUser.getIdToken();
+      const userDocRef = doc(db, "users", firebaseUser.uid);
+
+
+      let docSnapshot = await getDoc(userDocRef);
+
+      let retryCount = 0;
+      const maxRetries = 5;
+
+      while (!docSnapshot.exists() && retryCount < maxRetries) {
+        // 500ms 待機
+        await sleep(500);
+        // 再取得
+        docSnapshot = await getDoc(userDocRef);
+        retryCount++;
+      }
+
+      const userData = docSnapshot.data();
+      const plan = await fetchCurrentPlan(userDocRef.id);
+
+      setUser(
+        new User({
+          uid: userDocRef.id,
+          token,
+          photoURL: userData?.photoURL,
+          displayName: userData?.displayName,
+          type: userData?.type,
+          plan,
+        })
+      );
     });
 
     return () => unsubscribe();
-  }, [setUser]); // user を依存に入れない
+  }, [setUser]);
 
   const refreshUserData = async () => {
     if (!user.props.uid) return;

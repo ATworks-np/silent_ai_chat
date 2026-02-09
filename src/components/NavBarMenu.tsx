@@ -1,18 +1,30 @@
 "use client";
 
-import { Avatar, Box, IconButton, LinearProgress, Menu, Skeleton, Stack, Typography } from "@mui/material";
+import { Avatar, Box, IconButton, LinearProgress, Menu, MenuItem, Skeleton, Stack, Typography, Divider } from "@mui/material";
 import { useNavBarMenu } from "@/hooks/useNavBarMenu";
 import { useUserGemBalance } from "@/hooks/useUserGemBalance";
 import DiamondIcon from '@mui/icons-material/Diamond';
+import { getAuth, signOut } from "firebase/auth";
 
 interface NavBarMenuProps {
   displayName: string | null;
   photoURL: string | null;
+  isGuest: boolean;
+  onOpenLoginModal: () => void;
 }
 
-export function NavBarMenu({ displayName, photoURL }: NavBarMenuProps) {
+export function NavBarMenu({ displayName, photoURL, isGuest, onOpenLoginModal }: NavBarMenuProps) {
   const { anchorEl, open, handleOpen, handleClose } = useNavBarMenu();
   const { maxGem, usedGem, remainingGem, loading, error, refresh } = useUserGemBalance();
+
+  const handleLogout = async () => {
+    const auth = getAuth();
+    try {
+      await signOut(auth);
+    } finally {
+      handleClose();
+    }
+  };
 
   return (
     <>
@@ -99,6 +111,26 @@ export function NavBarMenu({ displayName, photoURL }: NavBarMenuProps) {
             )}
           </Stack>
         </Box>
+
+        <Divider />
+        {isGuest ? (
+          <MenuItem
+            onClick={() => {
+              handleClose();
+              onOpenLoginModal();
+            }}
+          >
+            <Typography variant="body2" color="text.primary">
+              ログイン
+            </Typography>
+          </MenuItem>
+        ) : (
+          <MenuItem onClick={handleLogout}>
+            <Typography variant="body2" color="text.primary">
+              ログアウト
+            </Typography>
+          </MenuItem>
+        )}
       </Menu>
     </>
   );
