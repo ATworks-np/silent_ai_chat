@@ -12,6 +12,8 @@ import {
 } from "firebase/firestore";
 import { db } from "@/libs/firebase";
 import useUser from "@/hooks/useUser";
+import {useAtom} from "jotai";
+import {userAtom} from "@/stores/user";
 
 interface SubscriptionDoc {
   action_name: string;
@@ -45,7 +47,7 @@ export interface UseUserGemBalanceReturn extends UseUserGemBalanceState {
 }
 
 export function useUserGemBalance(): UseUserGemBalanceReturn {
-  const { user } = useUser();
+  const [user] = useAtom(userAtom);
   const [state, setState] = useState<UseUserGemBalanceState>({
     maxGem: null,
     usedGem: null,

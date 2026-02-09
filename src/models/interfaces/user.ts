@@ -1,11 +1,4 @@
-import {Timestamp} from "firebase/firestore";
-
-export interface IUserPlan {
-  id: string;
-  name: string;
-  gem: number;
-  createdAt: Timestamp;
-}
+import {IPlan} from "@/models/interfaces/plan";
 
 export interface IUserConstructor {
   uid: string | undefined;
@@ -13,7 +6,7 @@ export interface IUserConstructor {
   displayName: string | null;
   type: 'guest' | 'standard' | 'pro' | 'unlimited' | undefined;
   photoURL: string | null;
-  plan?: IUserPlan;
+  plan?: IPlan;
 }
 
 export interface IUser {
@@ -23,10 +16,11 @@ export interface IUser {
   type: 'guest' | 'standard' | 'pro' | 'unlimited' | undefined;
   photoURL: string | null;
   isAuthenticated: boolean;
+  isGuest: boolean;
   isStandard: boolean;
   isPro: boolean;
   isUnlimited: boolean;
-  plan: IUserPlan;
+  plan: IPlan;
 }
 
 export interface IUserClass {

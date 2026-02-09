@@ -2,7 +2,7 @@
 
 import { BaseModal } from "./BaseModal";
 import { Stack } from "@mui/material";
-import { GoogleAuthProvider, getAuth, signInWithPopup } from "firebase/auth";
+import { GoogleAuthProvider, getAuth, linkWithPopup } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/libs/firebase";
 import RoundedButton from "@/components/RoundedButton";
@@ -22,7 +22,18 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     try {
       const auth = getAuth();
       const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
+      //const result = await signInWithPopup(auth, provider);
+
+      const currentUser = auth.currentUser;
+      let result = undefined;
+      if (currentUser && currentUser.isAnonymous) {
+        result = await linkWithPopup(currentUser, provider);
+      }
+
+      if (!result) {
+        throw new Error("エラーが発生しました");
+      }
+
       const firebaseUser = result.user;
       const token = await firebaseUser.getIdToken();
 

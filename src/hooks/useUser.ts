@@ -1,11 +1,10 @@
-"use client";
-
-import { useEffect } from "react";
-import { userAtom } from "@/stores/user";
-import { getAuth } from "firebase/auth";
 import { useAtom } from "jotai";
+import { useEffect } from "react";
+import { getAuth, signInAnonymously } from "firebase/auth";
+import { userAtom } from "@/stores/user";
 import { User, guestUser } from "@/models/entities/user";
-import type { IUserPlan } from "@/models/interfaces/user";
+import type { IPlan } from "@/models/interfaces/plan";
+import { guestPlan } from "@/models/interfaces/plan";
 import {
   collection,
   doc,
@@ -14,11 +13,14 @@ import {
   limit,
   orderBy,
   query, Timestamp,
-  where,
+  setDoc,
+  where, serverTimestamp, addDoc,
 } from "firebase/firestore";
 import { db } from "@/libs/firebase";
 
-const fetchCurrentPlan = async (uid: string): Promise<IUserPlan | undefined> => {
+let anonymousSignInStarted = false;
+
+const fetchCurrentPlan = async (uid: string): Promise<IPlan | undefined> => {
   const subscriptionsRef = collection(db, "users", uid, "subscriptions");
   const subscriptionQuery = query(
     subscriptionsRef,
@@ -73,7 +75,24 @@ const useUser = () => {
         const token = await firebaseUser.getIdToken();
         const userDocRef = doc(db, "users", firebaseUser.uid);
         const docSnapshot = await getDoc(userDocRef);
-        const userData = docSnapshot.data();
+
+        if (!docSnapshot.exists()) {
+          await setDoc(userDocRef, {
+            displayName: firebaseUser.displayName ?? null,
+            photoURL: firebaseUser.photoURL ?? null,
+            type: "guest",
+          });
+
+          // 初回ゲスト作成時に subscriptions に created レコードを追加
+          const subscriptionsRef = collection(db, "users", userDocRef.id, "subscriptions");
+          await addDoc(subscriptionsRef, {
+            actionName: "created",
+            createdAt: serverTimestamp(),
+            planId: guestPlan.id,
+          });
+        }
+
+        const userData = (await getDoc(userDocRef)).data();
         const plan = await fetchCurrentPlan(userDocRef.id);
         setUser(
           new User({
@@ -86,7 +105,15 @@ const useUser = () => {
           })
         );
       } else {
-        setUser(guestUser);
+        try {
+          if (!anonymousSignInStarted) {
+            anonymousSignInStarted = true;
+            await signInAnonymously(auth);
+          }
+        } catch (error) {
+          console.error("Failed to sign in anonymously", error);
+          setUser(guestUser);
+        }
       }
     });
 

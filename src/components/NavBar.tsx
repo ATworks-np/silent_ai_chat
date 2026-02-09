@@ -1,10 +1,12 @@
 "use client";
 
-import { AppBar, Toolbar, Button, Box } from "@mui/material";
+import { AppBar, Toolbar, Button, Box, Paper, Typography } from "@mui/material";
 import { useState } from "react";
-import { LoginModal } from "./LoginModal";
+import { LoginModal } from "@/components/LoginModal";
 import useUser from "@/hooks/useUser";
-import { NavBarMenu } from "./NavBarMenu";
+import { NavBarMenu } from "@/components/NavBarMenu";
+import CircularProgress from "@mui/material/CircularProgress";
+import RoundedButton from "@/components/RoundedButton";
 
 export function NavBar() {
   const [loginModalOpen, setLoginModalOpen] = useState(false);
@@ -23,15 +25,22 @@ export function NavBar() {
       <AppBar position="fixed" color="primary">
         <Toolbar>
           <Box sx={{ flexGrow: 1 }} />
+          {user.props.plan?.name == 'guest' &&
+            <RoundedButton
+              variant="contained"
+              color="primary"
+              onClick={handleOpenLoginModal}
+            >
+                ログイン
+            </RoundedButton>
+          }
           {user.props.isAuthenticated ? (
             <NavBarMenu
               displayName={user.props.displayName}
               photoURL={user.props.photoURL}
             />
           ) : (
-            <Button color="inherit" onClick={handleOpenLoginModal}>
-              ログイン
-            </Button>
+            <CircularProgress size={30} color='inherit'/>
           )}
         </Toolbar>
       </AppBar>
