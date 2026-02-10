@@ -75,7 +75,7 @@ const useUser = () => {
   useEffect(() => {
     const auth = getAuth();
 
-    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+    const unsubscribe = auth.onIdTokenChanged(async (firebaseUser) => {
       console.log('onAuthStateChange', firebaseUser);
       // 1. ユーザーが存在しない場合のみ、匿名ログインを試みる
       if (!firebaseUser) {

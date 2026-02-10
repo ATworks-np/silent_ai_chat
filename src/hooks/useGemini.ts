@@ -7,6 +7,7 @@ import type { AnswerQuality, AnswerTone } from "./useChatSettings";
 import { useConversationPersistence } from "./useConversationPersistence";
 import { useMessages } from "./useMessages";
 import useUser from "@/hooks/useUser";
+import {sendGemini} from "@/services/gemini";
 
 export interface GeminiMessage {
   id: string;
@@ -72,9 +73,6 @@ export function useGemini({ quality, tone }: UseGeminiOptions) {
       setError(null);
 
       try {
-        // 1. これまでの会話履歴を contents 配列として組み立てる（必要に応じて）
-        // parentId が指定されている場合は、その「回答」と、その先祖（親・祖父…）にあたる回答および
-        // それぞれを導いた直近のユーザーメッセージを、古いものから順にコンテキストとして含める
         let historyContents: Array<{ role: "user" | "model"; parts: { text: string }[] }> = [];
 
         if (parentId && messages.length > 0) {
@@ -133,50 +131,15 @@ export function useGemini({ quality, tone }: UseGeminiOptions) {
           }
         }
 
-        // モデルには、通常の回答に加えて「次にするアクション」2つも同時に返すよう指示する
-        const formatInstruction = [
-          "---",
-          "出力形式:",
-          "1. まず通常の回答本文のみを出力する。",
-          "2. 1行空けてから'次にするアクション:'という見出しを1行で出力する。",
-          "3. その直下に、ユーザーが次に取りうるアクションを日本語で2つ提案する。",
-          "4. 各アクションは1文(20文字以内)の体言止めとし、箇条書きの番号や記号（1. や ・ など）は付けない。",
-          "5. アクションはちょうど2行とし、1行目に1つ目、2行目に2つ目のアクションを書く。",
-        ].join("\n");
-
-        const finalUserText = [
-          userMessage,
-          "",
-          formatInstruction,
-        ].join("\n");
-
         const contents = [
           ...historyContents,
           {
             role: "user" as const,
-            parts: [{ text: finalUserText }],
+            parts: [{ text: userMessage }],
           },
         ];
 
-        // 2. いまのユーザーメッセージを state に追加
-        const userMessageId = `user-${Date.now()}-${Math.random()}`;
-        const newUserMessage: GeminiMessage = {
-          id: userMessageId,
-          role: "user",
-          content: userMessage,
-          parentId,
-        };
-        setMessages((prev) => [...prev, newUserMessage]);
 
-        const assistantId = assistantIdOverride || `assistant-${Date.now()}-${Math.random()}`;
-
-        // Initialize Gemini API
-        const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-        if (!apiKey) {
-          throw new Error("NEXT_PUBLIC_GEMINI_API_KEY is not set");
-        }
-
-        const genAI = new GoogleGenerativeAI(apiKey);
 
         const basePrompt = systemPrompt;
         const qualityInstruction = buildQualityInstruction(quality);
@@ -184,81 +147,30 @@ export function useGemini({ quality, tone }: UseGeminiOptions) {
 
         const finalSystemPrompt = `${basePrompt}\n\n---\n出力スタイル設定:\n${qualityInstruction}\n${toneInstruction}`.trim();
 
-        // 利用するモデル名（履歴にも保存する）
-        const modelName = "gemini-3-flash-preview";
+        const resualt = await sendGemini({
+          userId: user.props.uid || "",
+          parentId: parentId,
+          modelName: "gemini-3-flash-preview",
+          finalSystemPrompt: finalSystemPrompt,
+          contents: contents
+        })
 
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          systemInstruction: finalSystemPrompt,
-        });
+        if (!resualt) throw('Error');
 
-        const result = await model.generateContent({ contents });
-        const response = await result.response;
-        const rawText = response.text();
-
-        console.log(response);
-
-        // モデルからの返却テキストを「本文」と「次にするアクション」に分解する
-        const delimiter = "次にするアクション:";
-        let text = rawText;
-        let suggestedActions: string[] | undefined;
-
-        const delimiterIndex = rawText.indexOf(delimiter);
-
-        if (delimiterIndex !== -1) {
-          text = rawText.slice(0, delimiterIndex).trim();
-
-          const actionsPart = rawText.slice(delimiterIndex + delimiter.length).trim();
-          const actionLines = actionsPart
-            .split("\n")
-            .map((line) => line.trim())
-            .filter((line) => line.length > 0);
-
-          suggestedActions = actionLines.slice(0, 2);
-        }
-
-        // トークン使用量を取得（利用可能な場合のみ）
-        const usage = (response as unknown as {
-          usageMetadata?: {
-            promptTokenCount?: number;
-            candidatesTokenCount?: number;
-            thoughtsTokenCount?: number;
-            totalTokenCount?: number;
-          };
-        }).usageMetadata;
-
-        if (usage) {
-          const usageValue: GeminiTokenUsage = {
-            promptTokenCount: usage.promptTokenCount ?? 0,
-            candidatesTokenCount: usage.candidatesTokenCount ?? 0,
-            thoughtsTokenCount: usage.thoughtsTokenCount ?? 0,
-            totalTokenCount: usage.totalTokenCount ?? 0,
-          };
-
-          setLastTokenUsage(usageValue);
-
-          // Firestore に会話履歴を保存（本文とアクションを分けて保存）
-          await ensureAndSaveTurn({
-            userContent: userMessage,
-            assistantContent: text,
-            tokenUsage: usageValue,
-            userMessageId,
-            assistantMessageId: assistantId,
-            parentMessageId: parentId ?? null,
-            actions: suggestedActions,
-            modelName,
-          });
-        } else {
-          setLastTokenUsage(null);
-        }
-
-        // Add assistant message
-        const newAssistantMessage: GeminiMessage = {
-          id: assistantId,
-          role: "assistant",
-          content: text,
+        const newUserMessage: GeminiMessage = {
+          id: resualt.userMessageId,
+          role: "user",
+          content: userMessage,
           parentId,
-          suggestedActions,
+        };
+        setMessages((prev) => [...prev, newUserMessage]);
+
+        const newAssistantMessage: GeminiMessage = {
+          id: resualt.assistantMessageId,
+          role: "assistant",
+          content: resualt.assistantContent,
+          parentId,
+          suggestedActions: resualt.actions,
         };
         setMessages((prev) => [...prev, newAssistantMessage]);
       } catch (err) {

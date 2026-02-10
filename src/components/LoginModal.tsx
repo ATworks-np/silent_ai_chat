@@ -19,6 +19,7 @@ import {standardPlan} from "@/models/interfaces/plan";
 import {FirebaseError} from "@firebase/app";
 import {refresh} from "next/cache";
 import useUser from "@/hooks/useUser";
+import {createStandardSubscription, syncUserRecord, updateUser} from "@/services/createUser";
 
 interface LoginModalProps {
   open: boolean;
@@ -38,22 +39,26 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
         const result = await linkWithPopup(auth.currentUser, provider);
         firebaseUser = result.user;
 
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const docSnapshot = await getDoc(userDocRef);
 
-        if (!docSnapshot.exists()) {
-          await setDoc(userDocRef, {
-            displayName: firebaseUser.displayName,
-            photoURL: firebaseUser.photoURL,
-            type: 'none',
-          });
-          const subscriptionsRef = collection(db, "users", userDocRef.id, "subscriptions");
-          await addDoc(subscriptionsRef, {
-            actionName: "created",
-            createdAt: serverTimestamp(),
-            planId: standardPlan.id,
-          });
-        }
+        const googleProfile = firebaseUser.providerData.find(
+          (profile) => profile.providerId === "google.com"
+        );
+
+        const displayName = googleProfile?.displayName ?? firebaseUser.displayName;
+        const photoURL = googleProfile?.photoURL ?? firebaseUser.photoURL;
+
+        console.log(firebaseUser);
+
+        await updateUser({
+          uid: firebaseUser.uid,
+          displayName: displayName,
+          photoURL: photoURL,
+        })
+
+        await createStandardSubscription({
+          uid: firebaseUser.uid
+        });
+
       }
     } catch (error: unknown) {
       if (error instanceof FirebaseError) {
@@ -66,6 +71,15 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
               // そのクレデンシャルを使ってログイン（切り替え）
               const result = await signInWithCredential(auth, credential);
               firebaseUser = result.user;
+              console.log(firebaseUser);
+              await updateUser({
+                uid: firebaseUser.uid,
+                displayName: firebaseUser.displayName,
+                photoURL: firebaseUser.photoURL,
+              })
+              await createStandardSubscription({
+                uid: firebaseUser.uid
+              });
               console.log("既存のアカウントに切り替えました");
             }
           } catch (signInError) {

@@ -10,6 +10,7 @@ import {
 import { db } from "@/libs/firebase";
 import {useAtom} from "jotai";
 import {userAtom} from "@/stores/user";
+import {fetchUserUsedGem} from "@/services/fetchUser";
 
 interface ModelCost {
   user: number;
@@ -83,59 +84,61 @@ export function useUserGemBalance(): UseUserGemBalanceReturn {
           return;
         }
 
-        const modelsRef = collection(db, "models");
-        const modelsSnapshot = await getDocs(modelsRef);
+        // const modelsRef = collection(db, "models");
+        // const modelsSnapshot = await getDocs(modelsRef);
+        //
+        // if (cancelled) return;
+        //
+        // const modelCostByName = new Map<string, ModelCost>();
+        // modelsSnapshot.forEach((docSnapshot) => {
+        //   const modelData = docSnapshot.data() as ModelDoc;
+        //   if (!modelData.name || !modelData.cost) return;
+        //   modelCostByName.set(modelData.name, modelData.cost);
+        // });
+        //
+        // const startDate = currentPlan.createdAt.toDate();
+        // const endDate = new Date(startDate.getTime());
+        // endDate.setMonth(endDate.getMonth() + 1);
+        //
+        // const messagesRef = collection(db, "users", uid, "messages");
+        // const messagesQuery = query(
+        //   messagesRef,
+        //   where("createdAt", ">=", startDate),
+        //   where("createdAt", "<", endDate),
+        // );
+        //
+        // const messagesSnapshot = await getDocs(messagesQuery);
+        //
+        // if (cancelled) return;
+        //
+        // let usedGem = 0;
+        //
+        // messagesSnapshot.forEach((docSnapshot) => {
+        //   const data = docSnapshot.data();
+        //   const role = data.role as "user" | "model" | undefined;
+        //   const tokens = typeof data.tokens === "number" ? data.tokens : 0;
+        //   const modelName = (data.modelName ?? null) as string | null;
+        //
+        //   if (!modelName || !role || tokens <= 0) {
+        //     return;
+        //   }
+        //
+        //   const cost = modelCostByName.get(modelName);
+        //
+        //   if (!cost) {
+        //     return;
+        //   }
+        //
+        //   const unitCost = role === "user" ? cost.user : cost.model;
+        //
+        //   if (typeof unitCost !== "number") {
+        //     return;
+        //   }
+        //
+        //   usedGem += unitCost * tokens;
+        // });
 
-        if (cancelled) return;
-
-        const modelCostByName = new Map<string, ModelCost>();
-        modelsSnapshot.forEach((docSnapshot) => {
-          const modelData = docSnapshot.data() as ModelDoc;
-          if (!modelData.name || !modelData.cost) return;
-          modelCostByName.set(modelData.name, modelData.cost);
-        });
-
-        const startDate = currentPlan.createdAt.toDate();
-        const endDate = new Date(startDate.getTime());
-        endDate.setMonth(endDate.getMonth() + 1);
-
-        const messagesRef = collection(db, "users", uid, "messages");
-        const messagesQuery = query(
-          messagesRef,
-          where("createdAt", ">=", startDate),
-          where("createdAt", "<", endDate),
-        );
-
-        const messagesSnapshot = await getDocs(messagesQuery);
-
-        if (cancelled) return;
-
-        let usedGem = 0;
-
-        messagesSnapshot.forEach((docSnapshot) => {
-          const data = docSnapshot.data();
-          const role = data.role as "user" | "model" | undefined;
-          const tokens = typeof data.tokens === "number" ? data.tokens : 0;
-          const modelName = (data.modelName ?? null) as string | null;
-
-          if (!modelName || !role || tokens <= 0) {
-            return;
-          }
-
-          const cost = modelCostByName.get(modelName);
-
-          if (!cost) {
-            return;
-          }
-
-          const unitCost = role === "user" ? cost.user : cost.model;
-
-          if (typeof unitCost !== "number") {
-            return;
-          }
-
-          usedGem += unitCost * tokens;
-        });
+        const {usedGem, } = await fetchUserUsedGem(uid);
 
         const remainingGem = Math.max(0, maxGem - usedGem);
 
