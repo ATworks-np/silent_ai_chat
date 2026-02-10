@@ -59,7 +59,7 @@ export async function fetchUserPlan(userId: string): Promise<IPlanOnServer> {
     .where("actionName", "==", "created")
     .where("startedAt", "<=", now)
     .where("endAt", ">", now)
-    .orderBy("endAt", "desc")
+    .orderBy("startedAt", "desc")
     .limit(1)
     .get();
 
