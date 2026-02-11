@@ -114,8 +114,8 @@ export default function MessageItem({
   }, [content, highlights]);
 
   return (
-    <Box>
-      <Stack direction='row' spacing={{ xs: 0.5, sm: 2 }}>
+
+      <Stack direction='row' spacing={{ xs: 0.5, sm: 2 }} sx={{ width: '100%' }}>
         <Box
           sx={{
             height: '50px',
@@ -130,7 +130,6 @@ export default function MessageItem({
         <Box
           sx={{
             flexGrow: 1,
-            py: 1,
             color: "text.primary",
             transition: "background-color 0.2s ease",
             backgroundColor:
@@ -139,12 +138,12 @@ export default function MessageItem({
                 : "",
           }}
         >
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5}}>
-            {userMessages.length > 0 && (
+          {userMessages.length > 0 && (
               <Accordion
                 disableGutters
                 elevation={0}
                 sx={{
+                  justifyContent: "flex-end",
                   backgroundColor: "transparent",
                   "&::before": { display: "none" },
                   flex: 1,
@@ -154,7 +153,7 @@ export default function MessageItem({
                   expandIcon={<ExpandMoreIcon sx={{ fontSize: 16 }} />}
                   sx={{
                     minHeight: 0,
-                    justifyContent: "flex-start",
+                    justifyContent: "flex-end",
                     "& .MuiAccordionSummary-content": {
                       margin: 0,
                       flexGrow: 0,
@@ -185,7 +184,6 @@ export default function MessageItem({
                 </AccordionDetails>
               </Accordion>
             )}
-          </Stack>
           <Box
             sx={{
               userSelect: "text",
@@ -383,7 +381,6 @@ export default function MessageItem({
             </ReactMarkdown>
           </Box>
 
-          <Box　sx={{position: "relative"}}>
             <Accordion
               disableGutters
               elevation={0}
@@ -391,6 +388,7 @@ export default function MessageItem({
               onChange={(_, isExpanded) => setNextQuestionsExpanded(isExpanded)}
               sx={{
                 mt: 1,
+                width: "100%", // 親の幅いっぱいに広げる
                 backgroundColor: "transparent",
                 "&::before": { display: "none" },
               }}
@@ -400,7 +398,7 @@ export default function MessageItem({
                 sx={{
                   minHeight: 0,
                   px: 0,
-                  justifyContent: "flex-start", // 全体を左寄せにする
+                  justifyContent: "flex-end",
                   "& .MuiAccordionSummary-content": {
                     margin: 0,
                     flexGrow: 0, // 幅をコンテンツ分のみにする
@@ -452,8 +450,7 @@ export default function MessageItem({
                 </Grid>
               </AccordionDetails>
             </Accordion>
-
-            <Box  sx={{ position: "absolute", top: 0, right: 0 }}>
+            <Box sx={{ textAlign: "right", width: "100%"}}>
               <Tooltip title={"チャット履歴に含める"} placement="top">
                 <IconButton
                   color={isHistoryTarget ? "secondary" : "default"}
@@ -465,16 +462,14 @@ export default function MessageItem({
                 </IconButton>
               </Tooltip>
             </Box>
-          </Box>
+
 
           {children && (
             <Box sx={{ mt: 2 }}>
               {children}
             </Box>
           )}
-
         </Box>
       </Stack>
-    </Box>
   );
 }

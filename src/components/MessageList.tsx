@@ -202,7 +202,9 @@ export default function MessageList({ messages, onTextSelect, onNotResolved, dis
         sx={{
           ml: 0,
           mb: 2,
-          overflow: 'hidden'
+          overflow: 'hidden',
+          flexGlow: 1,
+          width: '100%',
         }}
       >
         <MessageItem
@@ -224,40 +226,38 @@ export default function MessageList({ messages, onTextSelect, onNotResolved, dis
         />
 
         {children.length > 0 && (
-          <Box sx={{ pb: 2 }}>
-            <Stack direction='row' sx={{pl: {xs: 0, sm: 3}}}>
-              <Stack alignItems='flex-end' direction='column' >
-                <IconButton 
-                  sx={{ p: 0, fontSize: { xs: '1rem', md: '1rem'} }}
-                  onClick={() => toggleCollapsed(userMsg.id)}
-                >
-                  {collapsedMessageIds.has(userMsg.id) ? (
-                    <AddCircleOutlineOutlinedIcon color='secondary' fontSize="inherit"/>
-                  ) : (
-                    <DoDisturbOnOutlinedIcon color='secondary' fontSize="inherit"/>
-                  )}
-                </IconButton>
-                <Box
-                  sx={{
-                    height: '100%',
-                    borderLeft: 2,
-                    borderLeftColor: 'divider',
-                    cursor: 'pointer',
-                    '&:hover': {
-                      borderLeftColor: 'primary.main'
-                    },
-                  }}
-                />
-              </Stack>
-
-              <Collapse in={!collapsedMessageIds.has(userMsg.id)} timeout={300}>
-                <Stack>
-                  {children.map(child => renderMessageTree(child, depth + 1))}
-                </Stack>
-              </Collapse>
-
+          <Stack direction='row' sx={{pl: {xs: 0, sm: 3}}}>
+            <Stack alignItems='flex-end' direction='column' >
+              <IconButton
+                sx={{ p: 0, fontSize: { xs: '1rem', md: '1rem'} }}
+                onClick={() => toggleCollapsed(userMsg.id)}
+              >
+                {collapsedMessageIds.has(userMsg.id) ? (
+                  <AddCircleOutlineOutlinedIcon color='secondary' fontSize="inherit"/>
+                ) : (
+                  <DoDisturbOnOutlinedIcon color='secondary' fontSize="inherit"/>
+                )}
+              </IconButton>
+              <Box
+                sx={{
+                  height: '100%',
+                  borderLeft: 2,
+                  borderLeftColor: 'divider',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    borderLeftColor: 'primary.main'
+                  },
+                }}
+              />
             </Stack>
-          </Box>
+
+            <Collapse in={!collapsedMessageIds.has(userMsg.id)} timeout={300} sx={{ width: '100%', flexGlow: 1}}>
+              <Stack>
+                {children.map(child => renderMessageTree(child, depth + 1))}
+              </Stack>
+            </Collapse>
+
+          </Stack>
         )}
       </Box>
     );

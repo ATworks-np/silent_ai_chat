@@ -1,6 +1,6 @@
 import { useAtom } from "jotai";
 import {useCallback, useEffect, useState} from "react";
-import {getAuth, signInAnonymously,User as FirebaseUser, UserInfo} from "firebase/auth";
+import {getAuth, signInAnonymously,User as FirebaseUser, UserInfo, type Auth} from "firebase/auth";
 import { userAtom } from "@/stores/user";
 import { User, guestUser } from "@/models/entities/user";
 import type { IPlan } from "@/models/interfaces/plan";
@@ -76,7 +76,7 @@ function getProfile(firebaseUser: FirebaseUser){
   };
 }
 
-const waitForAuth = (auth: any): Promise<FirebaseUser | null> => {
+const waitForAuth = (auth: Auth): Promise<FirebaseUser | null> => {
   return new Promise((resolve) => {
     // すでに currentUser があるなら即返す
     if (auth.currentUser) return resolve(auth.currentUser);

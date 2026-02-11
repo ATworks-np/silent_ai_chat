@@ -1,9 +1,11 @@
+import type { Timestamp } from "firebase/firestore";
+
 export interface MessageDoc {
   // メッセージ本体
   role: "user" | "model";
   content: string ;
   tokens: number;
-  createdAt: any;
+  createdAt: Timestamp | null;
 
   // ツリー構造のための情報
   messageId: string;

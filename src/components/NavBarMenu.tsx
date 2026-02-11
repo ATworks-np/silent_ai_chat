@@ -1,10 +1,14 @@
 "use client";
 
-import { Avatar, Box, IconButton, LinearProgress, Menu, MenuItem, Skeleton, Stack, Typography, Divider } from "@mui/material";
+import { Avatar, Box, IconButton, LinearProgress, Menu, MenuItem, Skeleton, Stack, Typography, Divider, Button } from "@mui/material";
 import { useNavBarMenu } from "@/hooks/useNavBarMenu";
 import { useUserGemBalance } from "@/hooks/useUserGemBalance";
 import DiamondIcon from '@mui/icons-material/Diamond';
+import UpgradeIcon from '@mui/icons-material/WorkspacePremium';
 import { getAuth, signOut } from "firebase/auth";
+import useUser from "@/hooks/useUser";
+import { usePlanModal } from "@/hooks/usePlanModal";
+import { PlanModal } from "@/components/PlanModal";
 
 interface NavBarMenuProps {
   displayName: string | null;
@@ -16,6 +20,8 @@ interface NavBarMenuProps {
 export function NavBarMenu({ displayName, photoURL, isGuest, onOpenLoginModal }: NavBarMenuProps) {
   const { anchorEl, open, handleOpen, handleClose } = useNavBarMenu();
   const { maxGem, usedGem, remainingGem, loading, error, refresh } = useUserGemBalance();
+  const { user } = useUser();
+  const planModal = usePlanModal();
 
   const handleLogout = async () => {
     const auth = getAuth();
@@ -25,6 +31,8 @@ export function NavBarMenu({ displayName, photoURL, isGuest, onOpenLoginModal }:
       handleClose();
     }
   };
+
+  const isUnlimited = !isGuest && user?.props?.plan?.name === "unlimited";
 
   return (
     <>
@@ -63,7 +71,7 @@ export function NavBarMenu({ displayName, photoURL, isGuest, onOpenLoginModal }:
           paper: {
             sx: {
               mt: 1.5,
-              width: "260px",
+              width: "280px",
             },
           },
         }}
@@ -109,6 +117,28 @@ export function NavBarMenu({ displayName, photoURL, isGuest, onOpenLoginModal }:
                 />
               </>
             )}
+
+            {!isUnlimited && (
+              <Button
+                variant="contained"
+                onClick={() => {
+                  planModal.open();
+                  handleClose();
+                }}
+                startIcon={<UpgradeIcon />}
+                sx={{
+                  mt: 1,
+                  py: 1,
+                  borderRadius: 999,
+                  fontWeight: 700,
+                  background: (theme) => `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                  color: '#fff',
+                  boxShadow: 4,
+                }}
+              >
+                アップグレードして<br />もっと使う
+              </Button>
+            )}
           </Stack>
         </Box>
 
@@ -132,6 +162,8 @@ export function NavBarMenu({ displayName, photoURL, isGuest, onOpenLoginModal }:
           </MenuItem>
         )}
       </Menu>
+
+      <PlanModal open={planModal.isOpen} onClose={planModal.close} />
     </>
   );
 }
