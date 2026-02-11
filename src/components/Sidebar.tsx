@@ -62,7 +62,7 @@ export function Sidebar({ state, actions }: SidebarProps) {
                 </ListItem>
               ) : (
                 messages.map((m) => (
-                  <ListItem key={m.messageId} disablePaddin>
+                  <ListItem key={m.messageId} disablePadding>
                     <ListItemButton onClick={() => {
                       actions.close();
                       setScrollTarget(m.messageId);
