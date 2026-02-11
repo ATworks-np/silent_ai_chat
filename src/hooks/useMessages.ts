@@ -5,7 +5,7 @@ import { collection, getDocs, orderBy, query, type Timestamp } from "firebase/fi
 import { db } from "@/libs/firebase";
 import useUser from "@/hooks/useUser";
 import type { GeminiMessage } from "@/hooks/useGemini";
-import type { MessageDoc } from "@/hooks/useConversationPersistence";
+import type { MessageDoc } from "@/models/interfaces/message";
 
 interface UseMessagesState {
   messages: GeminiMessage[];
@@ -28,13 +28,20 @@ export function useMessages() {
 
     // 未ログインの場合はメッセージを空にして完了扱いにする
     if (!uid) {
-      setState({
-        messages: [],
-        loading: false,
-        error: null,
-        initialized: true,
+      const raf = requestAnimationFrame(() => {
+        setState((prev) => {
+          if (prev.messages.length === 0 && prev.initialized && !prev.loading && prev.error === null) {
+            return prev;
+          }
+          return {
+            messages: [],
+            loading: false,
+            error: null,
+            initialized: true,
+          };
+        });
       });
-      return;
+      return () => cancelAnimationFrame(raf);
     }
 
     let cancelled = false;
@@ -49,15 +56,19 @@ export function useMessages() {
 
         if (cancelled) return;
 
-        const docs = snapshot.docs.map((doc) => doc.data() as MessageDoc);
+        const docs = snapshot.docs
+          .map((doc) => doc.data() as MessageDoc)
+          .filter((doc) => !doc.deleted);
 
         const messages: GeminiMessage[] = docs.map((doc) => ({
           id: doc.messageId,
           role: doc.role === "user" ? "user" : "assistant",
           content: doc.content,
           parentId: doc.parentMessageId ?? undefined,
+          sourceUserMessageId: doc.sourceUserMessageId ?? undefined,
           // Firestore に保存した actions を assistant メッセージの suggestedActions として復元
           suggestedActions: doc.role === "model" && doc.actions ? doc.actions : undefined,
+          archive: doc.archive,
         }));
 
 
@@ -87,6 +98,29 @@ export function useMessages() {
     };
   }, [user.props.uid]);
 
+  // メッセージツリーを削除（ルートメッセージとその子孫すべて）
+  const deleteMessageTreeLocal = (rootMessageId: string) => {
+    setState((prev) => {
+      const toDelete = new Set<string>();
+      toDelete.add(rootMessageId);
+
+      const collectDescendants = (parentId: string) => {
+        prev.messages.forEach((msg) => {
+          if (msg.parentId === parentId && !toDelete.has(msg.id)) {
+            toDelete.add(msg.id);
+            collectDescendants(msg.id);
+          }
+        });
+      };
+      collectDescendants(rootMessageId);
+
+      return {
+        ...prev,
+        messages: prev.messages.filter((msg) => !toDelete.has(msg.id)),
+      };
+    });
+  };
+
   return {
     messages: state.messages,
     setMessages: (updater: React.SetStateAction<GeminiMessage[]>) => {
@@ -95,6 +129,7 @@ export function useMessages() {
         messages: typeof updater === "function" ? (updater as (m: GeminiMessage[]) => GeminiMessage[])(prev.messages) : updater,
       }));
     },
+    deleteMessageTreeLocal,
     loading: state.loading,
     error: state.error,
     initialized: state.initialized,

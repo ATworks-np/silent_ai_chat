@@ -5,26 +5,7 @@ import { adminDb } from "@/libs/firebase-admin";
 import type { GeminiTokenUsage } from "@/hooks/useGemini";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import {fetchUserUsedGem} from "@/services/fetchUser";
-
-export interface MessageDoc {
-  // メッセージ本体
-  role: "user" | "model";
-  content: string ;
-  tokens: number;
-  createdAt: FieldValue;
-
-  // ツリー構造のための情報
-  messageId: string;
-  parentMessageId: string | null;
-
-  // モデルメッセージに紐づく「次にするアクション」候補
-  // user メッセージの場合は null
-  actions: string[] | null;
-
-  // このメッセージ生成時に使用したモデル名
-  // user / model 双方で、このメッセージ生成時に使用したモデル名を記録する
-  modelName: string | null;
-}
+import {MessageDoc} from "@/models/interfaces/message";
 
 interface conversationPersistenceParams {
   userId: string;
@@ -53,6 +34,7 @@ export async function conversationPersistence(params: conversationPersistencePar
     createdAt:  FieldValue.serverTimestamp(),
     messageId: params.userMessageId,
     parentMessageId: params.parentMessageId || null,
+    sourceUserMessageId: null,
     actions: null,
     modelName: params.modelName,
   };
@@ -64,6 +46,7 @@ export async function conversationPersistence(params: conversationPersistencePar
     createdAt:  FieldValue.serverTimestamp(),
     messageId: params.assistantMessageId,
     parentMessageId: params.parentMessageId || null,
+    sourceUserMessageId: params.userMessageId || null,
     actions: params.actions && params.actions.length > 0 ? params.actions : null,
     modelName: params.modelName,
   };
@@ -85,6 +68,61 @@ interface sendGeminiParams{
       text: string
     }[]
   }[]
+}
+
+// アーカイブの更新
+export async function updateMessageArchive(userId: string, messageId: string, archive: boolean): Promise<void> {
+  const messagesCollection = adminDb.collection("users").doc(userId).collection("messages");
+  const snapshot = await messagesCollection.where("messageId", "==", messageId).get();
+  
+  if (snapshot.empty) {
+    throw new Error("Message not found");
+  }
+  
+  const batch = adminDb.batch();
+  snapshot.docs.forEach((doc) => {
+    batch.update(doc.ref, { archive });
+  });
+  await batch.commit();
+}
+
+// メッセージツリーの削除（ルートメッセージとその配下すべて）
+export async function deleteMessageTree(userId: string, rootMessageId: string): Promise<void> {
+  const messagesCollection = adminDb.collection("users").doc(userId).collection("messages");
+  const allMessagesSnapshot = await messagesCollection.get();
+  
+  const allDocs = allMessagesSnapshot.docs.map((doc) => ({
+    ref: doc.ref,
+    data: doc.data() as MessageDoc,
+  }));
+  
+  // ルートメッセージのmessageIdに関連するすべてのメッセージを収集
+  const toDelete = new Set<string>();
+  
+  // ルートメッセージ自体を追加
+  toDelete.add(rootMessageId);
+  
+  // 子孫を再帰的に収集
+  const collectDescendants = (parentId: string) => {
+    allDocs.forEach((doc) => {
+      if (doc.data.parentMessageId === parentId && !toDelete.has(doc.data.messageId)) {
+        toDelete.add(doc.data.messageId);
+        collectDescendants(doc.data.messageId);
+      }
+    });
+  };
+  
+  collectDescendants(rootMessageId);
+  
+  // 削除対象のドキュメントを論理削除
+  const batch = adminDb.batch();
+  allDocs.forEach((doc) => {
+    if (toDelete.has(doc.data.messageId)) {
+      batch.update(doc.ref, { deleted: true });
+    }
+  });
+  
+  await batch.commit();
 }
 
 export async function sendGemini(params: sendGeminiParams):Promise<conversationPersistenceParams | undefined> {

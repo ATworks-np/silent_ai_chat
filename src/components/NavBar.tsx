@@ -1,14 +1,19 @@
 "use client";
 
-import { AppBar, Toolbar, Button, Box, Paper, Typography } from "@mui/material";
+import { AppBar, Toolbar, Box, IconButton } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
 import { useState } from "react";
 import { LoginModal } from "@/components/LoginModal";
 import useUser from "@/hooks/useUser";
 import { NavBarMenu } from "@/components/NavBarMenu";
 import CircularProgress from "@mui/material/CircularProgress";
-import RoundedButton from "@/components/RoundedButton";
+import { SidebarActions } from "@/models/interfaces/sidebar";
 
-export function NavBar() {
+interface NavBarProps {
+  sidebarActions: SidebarActions;
+}
+
+export function NavBar({ sidebarActions }: NavBarProps) {
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const { user } = useUser();
 
@@ -22,8 +27,27 @@ export function NavBar() {
 
   return (
     <>
-      <AppBar position="fixed" color="primary">
+      <AppBar
+        position="fixed"
+        color="primary"
+        sx={{
+          zIndex: (theme) => ({ xs: theme.zIndex.drawer - 1, xl: theme.zIndex.drawer + 1 }),
+        }}
+      >
         <Toolbar>
+          <IconButton
+            size="large"
+            edge="start"
+            color="inherit"
+            aria-label="menu"
+            sx={{ 
+              mr: 2,
+              display: { xs: 'inline-flex', xl: 'none' }
+            }}
+            onClick={sidebarActions.open}
+          >
+            <MenuIcon />
+          </IconButton>
           <Box sx={{ flexGrow: 1 }} />
           {user.props.isAuthenticated ? (
             <NavBarMenu

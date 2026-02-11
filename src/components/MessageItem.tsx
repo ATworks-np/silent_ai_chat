@@ -122,7 +122,6 @@ export default function MessageItem({
             width: {xs: '10px', sm: "20px"},
             borderBottom: 2,
             borderBottomColor: 'divider',
-            cursor: 'pointer',
             '&:hover': {
               borderLeftColor: 'primary.main'
             },
@@ -131,7 +130,6 @@ export default function MessageItem({
         <Box
           sx={{
             flexGrow: 1,
-            minWidth: 0,
             py: 1,
             color: "text.primary",
             transition: "background-color 0.2s ease",

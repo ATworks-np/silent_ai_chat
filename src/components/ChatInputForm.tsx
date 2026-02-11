@@ -38,7 +38,7 @@ export default function ChatInputForm({
                                         setSendMethod,
                                       }: ChatInputFormProps) {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("xl"));
   const { state, openModal, closeModal } = useSettingsModal();
 
   // モバイルデバイスでは常にCtrl+Enterモードを強制（実質Enterキー無効化）
@@ -130,7 +130,7 @@ export default function ChatInputForm({
       sx={{
         position: 'fixed',
         top: 0,
-        left: 0,
+        left: { xs: 0, xl: "320px" },
         right: 0,
         bottom: keyboardHeight,
         zIndex: 1000,

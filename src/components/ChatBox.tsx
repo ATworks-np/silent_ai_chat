@@ -20,7 +20,7 @@ import Image from 'next/image';
 export default function ChatBox() {
   const { value, onChange, reset } = useChatInput();
   const { quality, tone, sendMethod, setQuality, setTone, setSendMethod } = useChatSettings();
-  const { messages, loading, error, sendMessage, lastTokenUsage, messagesLoading } = useGemini({ quality, tone });
+  const { messages, loading, error, sendMessage, lastTokenUsage, messagesLoading, deleteMessageTreeLocal } = useGemini({ quality, tone });
   const [anchorPosition, setAnchorPosition] = useState<{ top: number; left: number } | null>(null);
   const [selectedText, setSelectedText] = useState<string>("");
   const [selectedMessageId, setSelectedMessageId] = useState<string>("");
@@ -196,6 +196,7 @@ export default function ChatBox() {
             onHistoryTargetChange={(messageId:string | null) => {
               setHistoryTargetMessageId(messageId);
             }}
+            onDeleteMessageTree={deleteMessageTreeLocal}
           />
 
           <DetailPopover
@@ -205,6 +206,7 @@ export default function ChatBox() {
             onMoreDetails={handleMoreDetails}
             disabled={loading}
           />
+
         </Stack>
 
         <NextActionsModal
@@ -223,21 +225,23 @@ export default function ChatBox() {
             setActiveSuggestions(null);
           }}
         />
+
+        <ChatInputForm
+          value={value.text}
+          onChange={onChange}
+          onSubmit={handleSubmit}
+          disabled={loading}
+          quality={quality}
+          tone={tone}
+          setQuality={setQuality}
+          setTone={setTone}
+          sendMethod={sendMethod}
+          setSendMethod={setSendMethod}
+          // 入力欄クリックも背景扱いにならないようにする
+          // ラッパーの Box で onClick stopPropagation 済みのためここは不要
+        />
       </Box>
-      <ChatInputForm
-        value={value.text}
-        onChange={onChange}
-        onSubmit={handleSubmit}
-        disabled={loading}
-        quality={quality}
-        tone={tone}
-        setQuality={setQuality}
-        setTone={setTone}
-        sendMethod={sendMethod}
-        setSendMethod={setSendMethod}
-        // 入力欄クリックも背景扱いにならないようにする
-        // ラッパーの Box で onClick stopPropagation 済みのためここは不要
-      />
+
 
     </>
   );

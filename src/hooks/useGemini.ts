@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useSystemPrompt } from "./useSystemPrompt";
 import type { AnswerQuality, AnswerTone } from "./useChatSettings";
-import { useConversationPersistence } from "./useConversationPersistence";
 import { useMessages } from "./useMessages";
 import useUser from "@/hooks/useUser";
 import {sendGemini} from "@/services/gemini";
@@ -16,6 +14,17 @@ export interface GeminiMessage {
   parentId?: string;
   // Geminiの回答に対して、次に取るべきアクション候補（最大2件）
   suggestedActions?: string[];
+  sourceUserMessageId?: string;
+  archive?: boolean;
+}
+
+export interface UseMessagesReturn {
+  messages: GeminiMessage[];
+  setMessages: React.Dispatch<React.SetStateAction<GeminiMessage[]>>;
+  deleteMessageTreeLocal: (rootMessageId: string) => void;
+  loading: boolean;
+  error: string | null;
+  initialized: boolean;
 }
 
 export interface UseGeminiOptions {
@@ -57,13 +66,12 @@ function buildToneInstruction(tone: AnswerTone): string {
 }
 
 export function useGemini({ quality, tone }: UseGeminiOptions) {
-  const { messages, setMessages, loading: messagesLoading } = useMessages();
+  const { messages, setMessages, deleteMessageTreeLocal, loading: messagesLoading } = useMessages();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastTokenUsage, setLastTokenUsage] = useState<GeminiTokenUsage | null>(null);
   const { content: systemPrompt } = useSystemPrompt();
   const { user } = useUser();
-  const { ensureAndSaveTurn } = useConversationPersistence({ userId: user.props.uid ?? null });
 
   const sendMessage = useCallback(
     async (userMessage: string, parentId?: string, assistantIdOverride?: string) => {
@@ -171,6 +179,7 @@ export function useGemini({ quality, tone }: UseGeminiOptions) {
           content: resualt.assistantContent,
           parentId,
           suggestedActions: resualt.actions,
+          sourceUserMessageId: resualt.userMessageId,
         };
         setMessages((prev) => [...prev, newAssistantMessage]);
       } catch (err) {
@@ -184,7 +193,7 @@ export function useGemini({ quality, tone }: UseGeminiOptions) {
     [systemPrompt, quality, tone, messages],
   );
 
-  return { messages, loading, error, sendMessage, lastTokenUsage, messagesLoading };
+  return { messages, loading, error, sendMessage, lastTokenUsage, messagesLoading, deleteMessageTreeLocal };
 }
 
 export type UseGeminiReturn = ReturnType<typeof useGemini>;
