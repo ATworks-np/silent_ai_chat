@@ -79,7 +79,7 @@ export function PlanModal({ open, onClose }: PlanModalProps) {
 
         <Grid container spacing={1}>
           {plans.map((plan) => (
-            <Grid item xs={12} md={4} key={plan.title}>
+            <Grid size={{ xs: 12, md: 4 }} key={plan.title}>
               <Paper
                 elevation={plan.isPopular ? 8 : 1}
                 sx={{
