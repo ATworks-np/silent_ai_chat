@@ -5,7 +5,7 @@ export interface MessageDoc {
   role: "user" | "model";
   content: string ;
   tokens: number;
-  createdAt: Timestamp | null;
+  createdAt: any | null;
 
   // ツリー構造のための情報
   messageId: string;
