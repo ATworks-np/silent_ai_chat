@@ -17,6 +17,10 @@ import type { UserMessage, HighlightedSelection } from "@/types/messages";
 import {Grid, IconButton, Tooltip} from "@mui/material";
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 interface MessageItemProps {
   messageId: string;
@@ -188,10 +192,22 @@ export default function MessageItem({
               userSelect: "text",
               cursor: "text",
               "& p": { margin: "0.5em 0" },
-              "& h1, & h2, & h3, & h4, & h5, & h6": {
-                marginTop: "1em",
-                marginBottom: "0.5em",
-                fontWeight: "bold"
+              // テーブル用のスタイルを追加
+              "& table": {
+                width: "100%",
+                borderCollapse: "collapse",
+                margin: "1em 0",
+                overflowX: "auto",
+                display: "block",
+              },
+              "& th, & td": {
+                border: "1px solid rgba(0, 0, 0, 0.12)",
+                padding: "8px 12px",
+                textAlign: "left",
+              },
+              "& th": {
+                backgroundColor: "rgba(0, 0, 0, 0.02)",
+                fontWeight: "bold",
               },
               "& ul, & ol": { paddingLeft: "2em", margin: "0.5em 0" },
               "& code": {
@@ -200,12 +216,14 @@ export default function MessageItem({
                 borderRadius: "3px",
                 fontFamily: "monospace"
               },
+
               "& pre": {
                 backgroundColor: "rgba(0, 0, 0, 0.05)",
                 padding: "1em",
                 borderRadius: "4px",
                 overflow: "auto"
               },
+
               "& pre code": {
                 backgroundColor: "transparent",
                 padding: 0
@@ -216,19 +234,22 @@ export default function MessageItem({
                 borderRadius: "2px",
                 padding: "0.1em 0.2em",
                 cursor: "pointer",
-              }
+              },
+              "& .katex-display": {
+                margin: "1em 0",
+                overflowX: "auto",
+                overflowY: "hidden",
+              },
             }}
             onMouseUp={onTextSelect}
           >
             <ReactMarkdown
-              rehypePlugins={[rehypeRaw, rehypeHighlight]}
-              // markタグにホバーイベントを付与して対応する子メッセージのPaperをハイライト
+              // remarkGfmをプラグインに追加
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeRaw, rehypeHighlight, rehypeKatex]}
               components={{
                 mark: ({ node, children, ...props }) => {
-                  // data-child-id は props 側に乗ってくる場合があるので、まず props を優先して読む
-                  const dataChildIdFromProps =
-                    (props as { [key: string]: unknown })["data-child-id"];
-
+                  const dataChildIdFromProps = (props as { [key: string]: unknown })["data-child-id"];
                   const dataChildIdFromNode =
                     node && "properties" in (node as never)
                       ? (node as { properties?: { [key: string]: unknown } }).properties?.["data-child-id"]
@@ -240,18 +261,11 @@ export default function MessageItem({
                     "";
 
                   const handleMouseEnter = () => {
-                    if (dataChildId) {
-                      console.log("Hovered highlight for child message:", dataChildId);
-                      if (onHoverChild) {
-                        onHoverChild(dataChildId);
-                      }
-                    }
+                    if (dataChildId && onHoverChild) onHoverChild(dataChildId);
                   };
 
                   const handleMouseLeave = () => {
-                    if (onHoverChild) {
-                      onHoverChild("");
-                    }
+                    if (onHoverChild) onHoverChild("");
                   };
 
                   return (
@@ -265,22 +279,24 @@ export default function MessageItem({
                     </mark>
                   );
                 },
+                // ここが省略されていた部分です
                 pre: ({ node, children, ...props }) => {
                   const handleCopy = () => {
-                    // Extract text content from code element
                     const extractText = (obj: any): string => {
-                      console.log(obj)
-                      if (obj.type === "text") {
-                        return obj.value || "";
-                      }
+                      if (!obj) return "";
+                      if (typeof obj === "string") return obj;
+                      if (obj.type === "text") return obj.value || "";
                       if (obj.children && Array.isArray(obj.children)) {
                         return obj.children.map(extractText).join("");
+                      }
+                      // React element の children を扱う場合
+                      if (obj.props && obj.props.children) {
+                        return React.Children.toArray(obj.props.children).map(extractText).join("");
                       }
                       return "";
                     };
 
                     const codeText = extractText(node);
-                    // Copy to clipboard
                     if (codeText) {
                       navigator.clipboard.writeText(codeText)
                         .then(() => {
@@ -303,9 +319,10 @@ export default function MessageItem({
                           onClick={handleCopy}
                           sx={{
                             position: "absolute",
-                            top: 0,
-                            right: 0,
-                            backgroundColor: "rgba(255, 255, 255, 0)",
+                            top: 4, // 少し位置を調整
+                            right: 4,
+                            backgroundColor: "rgba(255, 255, 255, 0.1)",
+                            '&:hover': { backgroundColor: "rgba(255, 255, 255, 0.2)" }
                           }}
                         >
                           <ContentCopyIcon fontSize="small" />
@@ -314,11 +331,17 @@ export default function MessageItem({
                     </Box>
                   );
                 },
+                table: ({ children }) => (
+                  <Box component="table">
+                    {children}
+                  </Box>
+                ),
               }}
             >
               {highlightedContent}
             </ReactMarkdown>
           </Box>
+
           <Box　sx={{position: "relative"}}>
             <Accordion
               disableGutters
