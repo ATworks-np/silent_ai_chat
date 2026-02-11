@@ -9,15 +9,9 @@ import {
   signInWithCredential,
   AuthError
 } from "firebase/auth";
-import {addDoc, collection, doc, getDoc, serverTimestamp, setDoc} from "firebase/firestore";
-import { db } from "@/libs/firebase";
 import RoundedButton from "@/components/RoundedButton";
-import { useAtom } from "jotai/index";
-import { userAtom } from "@/stores/user";
-import { User } from "@/models/entities/user";
-import {standardPlan} from "@/models/interfaces/plan";
+import { User, UserInfo } from "firebase/auth";
 import {FirebaseError} from "@firebase/app";
-import {refresh} from "next/cache";
 import useUser from "@/hooks/useUser";
 import {createStandardSubscription, syncUserRecord, updateUser} from "@/services/createUser";
 
@@ -26,7 +20,19 @@ interface LoginModalProps {
   onClose: () => void;
 }
 
+function getProfile(firebaseUser: User){
+  const googleProfile = firebaseUser.providerData.find(
+    (profile: UserInfo) => profile.providerId === "google.com"
+  );
+
+  return {
+    displayName: googleProfile?.displayName ?? firebaseUser.displayName,
+    photoURL: googleProfile?.photoURL ?? firebaseUser.photoURL,
+  };
+}
+
 export function LoginModal({ open, onClose }: LoginModalProps) {
+  const {refresh} = useUser();
 
   const handleGoogleLogin = async () => {
     const auth = getAuth();
@@ -39,26 +45,18 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
         const result = await linkWithPopup(auth.currentUser, provider);
         firebaseUser = result.user;
 
-
-        const googleProfile = firebaseUser.providerData.find(
-          (profile) => profile.providerId === "google.com"
-        );
-
-        const displayName = googleProfile?.displayName ?? firebaseUser.displayName;
-        const photoURL = googleProfile?.photoURL ?? firebaseUser.photoURL;
-
-        console.log(firebaseUser);
-
-        await updateUser({
-          uid: firebaseUser.uid,
-          displayName: displayName,
-          photoURL: photoURL,
-        })
+        await updateUser(
+          {
+            uid: firebaseUser.uid,
+            ...getProfile(firebaseUser),
+          }
+        )
 
         await createStandardSubscription({
           uid: firebaseUser.uid
         });
 
+        await refresh(true);
       }
     } catch (error: unknown) {
       if (error instanceof FirebaseError) {
@@ -71,16 +69,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
               // そのクレデンシャルを使ってログイン（切り替え）
               const result = await signInWithCredential(auth, credential);
               firebaseUser = result.user;
-              console.log(firebaseUser);
-              await updateUser({
-                uid: firebaseUser.uid,
-                displayName: firebaseUser.displayName,
-                photoURL: firebaseUser.photoURL,
-              })
-              await createStandardSubscription({
-                uid: firebaseUser.uid
-              });
-              console.log("既存のアカウントに切り替えました");
+              await refresh(true);
             }
           } catch (signInError) {
             console.error("Switching account failed:", signInError);

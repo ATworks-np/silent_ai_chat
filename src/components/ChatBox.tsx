@@ -130,13 +130,12 @@ export default function ChatBox() {
   return (
     <>
       <Box
-        sx={{ minHeight: "100vh" }}
+        sx={{ minHeight: "90dvh" }}
       >
         <Stack
           alignItems="center"
           spacing={2}
           sx={{
-            minHeight: "100dvh",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -198,22 +197,6 @@ export default function ChatBox() {
               setHistoryTargetMessageId(messageId);
             }}
           />
-
-          {lastTokenUsage && (
-            <Box
-              sx={{
-                mt: 1,
-                px: 2,
-                py: 0.5,
-                alignSelf: "stretch",
-                maxWidth: "800px",
-              }}
-            >
-              <Typography variant="caption" color="text.secondary">
-                入力トークン: {lastTokenUsage.promptTokenCount} / 出力トークン: {lastTokenUsage.candidatesTokenCount} / 合計: {lastTokenUsage.totalTokenCount}
-              </Typography>
-            </Box>
-          )}
 
           <DetailPopover
             open={open}

@@ -12,7 +12,7 @@ import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github.css";
 import RoundedButton from "./RoundedButton";
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import type { UserMessage, HighlightedSelection } from "@/types/messages";
 import {Grid, IconButton, Tooltip} from "@mui/material";
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
@@ -131,6 +131,7 @@ export default function MessageItem({
         <Box
           sx={{
             flexGrow: 1,
+            minWidth: 0,
             py: 1,
             color: "text.primary",
             transition: "background-color 0.2s ease",
@@ -191,6 +192,8 @@ export default function MessageItem({
             sx={{
               userSelect: "text",
               cursor: "text",
+              maxWidth: "100%",
+              overflowX: "auto",
               "& p": { margin: "0.5em 0" },
               // テーブル用のスタイルを追加
               "& table": {
@@ -221,12 +224,17 @@ export default function MessageItem({
                 backgroundColor: "rgba(0, 0, 0, 0.05)",
                 padding: "1em",
                 borderRadius: "4px",
-                overflow: "auto"
+                overflowX: "auto",
+                display: "block",
+                maxWidth: "100%",
+                boxSizing: "border-box",
+                WebkitOverflowScrolling: "touch",
               },
 
               "& pre code": {
                 backgroundColor: "transparent",
-                padding: 0
+                padding: 0,
+                whiteSpace: "pre",
               },
               "& mark": {
                 backgroundColor: "secondary.main",
@@ -279,9 +287,9 @@ export default function MessageItem({
                     </mark>
                   );
                 },
-                // ここが省略されていた部分です
                 pre: ({ node, children, ...props }) => {
                   const handleCopy = () => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const extractText = (obj: any): string => {
                       if (!obj) return "";
                       if (typeof obj === "string") return obj;
@@ -289,7 +297,6 @@ export default function MessageItem({
                       if (obj.children && Array.isArray(obj.children)) {
                         return obj.children.map(extractText).join("");
                       }
-                      // React element の children を扱う場合
                       if (obj.props && obj.props.children) {
                         return React.Children.toArray(obj.props.children).map(extractText).join("");
                       }
@@ -311,18 +318,54 @@ export default function MessageItem({
                   };
 
                   return (
-                    <Box sx={{ position: "relative" }}>
-                      <pre {...props}>{children}</pre>
+                    <Box
+                      sx={{
+                        position: "relative",
+                        // preの背景色と合わせることで、ボタン周りの余白を自然にします
+                        backgroundColor: "rgba(0, 0, 0, 0.05)",
+                        borderRadius: "4px",
+                        margin: "1em 0",
+                        overflow: "auto",
+                        "&::-webkit-scrollbar": { height: "8px" },
+                        "&::-webkit-scrollbar-thumb": {
+                          backgroundColor: "rgba(0,0,0,0.2)",
+                          borderRadius: "4px",
+                        },
+                      }}
+                    >
+                      {/* pre 自体にスクロールを設定 */}
+                      <Box
+                        component="pre"
+                        {...props}
+                        sx={{
+                          margin: 0, // 外側のBoxで制御するので0に
+                          padding: "1em",
+                          overflowX: "auto", // 横スクロールを有効化
+                          display: "block",
+                          width: "100%",
+                          boxSizing: "border-box",
+                          // スクロールバーの見た目を少し整える（任意）
+                          // "&::-webkit-scrollbar": { height: "8px" },
+                          // "&::-webkit-scrollbar-thumb": {
+                          //   backgroundColor: "rgba(0,0,0,0.2)",
+                          //   borderRadius: "4px",
+                          // },
+                        }}
+                      >
+                        {children}
+                      </Box>
+
                       <Tooltip title={copySuccess || "クリップボードにコピー"} placement="top">
                         <IconButton
                           size="small"
                           onClick={handleCopy}
                           sx={{
                             position: "absolute",
-                            top: 4, // 少し位置を調整
-                            right: 4,
-                            backgroundColor: "rgba(255, 255, 255, 0.1)",
-                            '&:hover': { backgroundColor: "rgba(255, 255, 255, 0.2)" }
+                            top: 8,
+                            right: 8,
+                            backgroundColor: "rgba(255, 255, 255, 0.8)", // スクロールで見え隠れしないよう不透明度を調整
+                            '&:hover': { backgroundColor: "rgba(255, 255, 255, 0.9)" },
+                            zIndex: 1, // コードより上に表示
                           }}
                         >
                           <ContentCopyIcon fontSize="small" />

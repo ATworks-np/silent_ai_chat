@@ -205,7 +205,7 @@ export default function MessageList({ messages, onTextSelect, onNotResolved, dis
   };
 
   return (
-    <Box sx={{maxWidth: "800px"}}>
+    <Box sx={{maxWidth: "800px", width: "100%"}}>
       <Stack spacing={2} sx={{ mt: 3, mx: "auto" }}>
         {rootMessages.map(msg => renderMessageTree(msg, 0))}
       </Stack>
