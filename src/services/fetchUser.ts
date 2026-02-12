@@ -88,13 +88,14 @@ export async function fetchUserPlan(userId: string): Promise<IPlanOnServer> {
 
   if(planData.price == 0){
     const createdDate = subscriptionData.createdAt.toDate();
-    const monthsDiff = (now.getFullYear() - createdDate.getFullYear()) * 12 + (now.getMonth() - createdDate.getMonth());
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const daysDiff = Math.floor((now.getTime() - createdDate.getTime()) / oneDayMs);
 
     const startedAt = new Date(createdDate);
-    startedAt.setMonth(startedAt.getMonth() + monthsDiff);
+    startedAt.setDate(startedAt.getDate() + daysDiff);
 
     const endAt = new Date(startedAt);
-    endAt.setMonth(endAt.getMonth() + 1);
+    endAt.setDate(endAt.getDate() + 1);
 
     return {
       id: subscriptionData.planId,
